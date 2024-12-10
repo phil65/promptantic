@@ -7,7 +7,7 @@ from decimal import Decimal
 from enum import Enum
 import ipaddress
 from pathlib import Path
-from typing import TYPE_CHECKING, Any
+from typing import TYPE_CHECKING, Any, get_origin
 from uuid import UUID
 from zoneinfo import ZoneInfo
 
@@ -47,9 +47,11 @@ from promptantic.handlers.unions import UnionHandler
 from promptantic.type_utils import (
     is_constrained_int,
     is_constrained_str,
+    is_enum_type,
     is_import_string,
     is_literal_type,
     is_model_type,
+    is_tuple_type,
     is_union_type,
 )
 from promptantic.ui.style import DEFAULT_STYLE
@@ -136,18 +138,7 @@ class ModelGenerator:
         self._handlers[typ] = handler
 
     def get_handler(self, typ: type, field_info: Any = None) -> TypeHandler:  # noqa: PLR0911
-        """Get a handler for the given type.
-
-        Args:
-            typ: The type to get a handler for
-            field_info: Optional field info for additional type detection
-
-        Returns:
-            The appropriate type handler
-
-        Raises:
-            NoHandlerError: If no handler is found for the type
-        """
+        """Get a handler for the given type."""
         # Handle None type (use str as default)
         if typ is None:
             return self._handlers[str]
@@ -166,6 +157,14 @@ class ModelGenerator:
         if is_union_type(typ):
             return UnionHandler(self)
 
+        # Check if it's a tuple type
+        if is_tuple_type(typ):
+            return self._handlers[tuple]
+
+        # Check if it's an enum type
+        if is_enum_type(typ):
+            return self._handlers[Enum]
+
         # For model types, use the model handler
         if is_model_type(typ):
             return self._handlers[BaseModel]
@@ -178,8 +177,10 @@ class ModelGenerator:
                 return self._url_handler
         if is_import_string(typ):
             return ImportStringHandler(self)
+
         # For regular types, look up the handler
-        handler = self._handlers.get(typ)
+        origin = get_origin(typ)
+        handler = self._handlers.get(origin if origin is not None else typ)
         if handler is None:
             msg = f"No handler registered for type: {typ}"
             raise NoHandlerError(msg)

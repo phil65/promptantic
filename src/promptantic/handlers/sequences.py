@@ -1,37 +1,22 @@
 """Handlers for sequence types."""
 
-from __future__ import annotations
-
-from typing import Any, TypeVar, get_args, get_origin
+from typing import Any, get_args, get_origin
 
 from promptantic.exceptions import ValidationError
 from promptantic.handlers.base import BaseHandler
 
 
-T = TypeVar("T")
-
-
-class SequenceHandler(BaseHandler):
+class SequenceHandler(BaseHandler[tuple[Any, ...]]):
     """Base handler for sequence types."""
 
     async def handle(
         self,
         field_name: str,
-        field_type: type[list[Any] | set[Any] | tuple[Any, ...]],
+        field_type: type[tuple[Any, ...]] | type[list[Any]] | type[set[Any]],
         description: str | None = None,
         **options: Any,
-    ) -> list[Any] | set[Any] | tuple[Any, ...]:
-        """Handle sequence input.
-
-        Args:
-            field_name: Name of the field
-            field_type: Type of the sequence (e.g. list[int], set[str])
-            description: Optional field description
-            **options: Additional options
-
-        Returns:
-            The populated sequence
-        """
+    ) -> tuple[Any, ...]:
+        """Handle sequence input."""
         # Get the type of items in the sequence
         item_type = get_args(field_type)[0]
         origin = get_origin(field_type)
@@ -67,19 +52,10 @@ class SequenceHandler(BaseHandler):
                     print("\nRemoved last item")
                 continue
 
-        # Convert to appropriate sequence type
-        if origin is list:
-            return items
-        if origin is set:
-            return set(items)
-        if origin is tuple:
-            return tuple(items)
-
-        msg = f"Unsupported sequence type: {origin}"
-        raise ValidationError(msg)
+        return tuple(items)
 
 
-class ListHandler(BaseHandler):
+class ListHandler(BaseHandler[list[Any]]):
     """Handler for list input."""
 
     async def handle(
@@ -96,7 +72,7 @@ class ListHandler(BaseHandler):
         return list(result)
 
 
-class SetHandler(BaseHandler):
+class SetHandler(BaseHandler[set[Any]]):
     """Handler for set input."""
 
     async def handle(
@@ -113,7 +89,7 @@ class SetHandler(BaseHandler):
         return set(result)
 
 
-class TupleHandler(BaseHandler):
+class TupleHandler(BaseHandler[tuple[Any, ...]]):
     """Handler for tuple input."""
 
     async def handle(
@@ -124,7 +100,44 @@ class TupleHandler(BaseHandler):
         **options: Any,
     ) -> tuple[Any, ...]:
         """Handle tuple input."""
-        result = await SequenceHandler(self.generator).handle(
+        # Get the item types from the tuple
+        args = get_args(field_type)
+        if not args:
+            # Handle tuple without type args as tuple[Any, ...]
+            return await SequenceHandler(self.generator).handle(
+                field_name, field_type, description, **options
+            )
+
+        # Handle fixed-length tuples
+        if not any(arg is ... for arg in args):
+            values: list[Any] = []
+            for i, item_type in enumerate(args):
+                item_name = f"{field_name}[{i}]"
+                item_handler = self.generator.get_handler(item_type)
+                # Create a type-specific description
+                type_name = getattr(item_type, "__name__", str(item_type))
+                item_desc = (
+                    f"{description} ({type_name})"
+                    if description
+                    else f"Enter {type_name}"
+                )
+
+                while True:
+                    try:
+                        value = await item_handler.handle(
+                            field_name=item_name,
+                            field_type=item_type,
+                            description=item_desc,
+                        )
+                        values.append(value)
+                        break
+                    except ValidationError as e:
+                        print(f"\033[91mValidation error: {e}\033[0m")
+                        print("Please try again...")
+
+            return tuple(values)
+
+        # Handle variable-length tuples (tuple[int, ...])
+        return await SequenceHandler(self.generator).handle(
             field_name, field_type, description, **options
         )
-        return tuple(result)

@@ -25,7 +25,7 @@ def get_type_display_name(typ: type[Any]) -> str:
     return typ.__name__.lower()
 
 
-class UnionHandler(BaseHandler):
+class UnionHandler(BaseHandler[Any]):
     """Handler for union types."""
 
     async def handle(
@@ -45,6 +45,10 @@ class UnionHandler(BaseHandler):
 
         Returns:
             A value of one of the union types
+
+        Raises:
+            ValidationError: If selection is cancelled
+            KeyboardInterrupt: If Ctrl+C is pressed
         """
         # Get the possible types from the union
         types = get_union_types(field_type)
@@ -52,12 +56,18 @@ class UnionHandler(BaseHandler):
         # Create choices for the dialog
         choices = [(typ, get_type_display_name(typ)) for typ in types]
 
-        # Let user select the type
-        selected_type = await radiolist_dialog(
-            title=f"Select type for {field_name}",
-            text=description or "Choose the type to use:",
-            values=choices,
-        ).run_async()
+        print("\nUse arrow keys to select, Enter to confirm.")
+        print("Press Esc, q, or Ctrl+C to cancel.\n")
+
+        try:
+            selected_type = await radiolist_dialog(
+                title=f"Select type for {field_name}",
+                text=description or "Choose the type to use:",
+                values=choices,
+            ).run_async()
+        except KeyboardInterrupt:
+            print("\nSelection cancelled with Ctrl+C")
+            raise
 
         if selected_type is None:
             msg = "Type selection cancelled"

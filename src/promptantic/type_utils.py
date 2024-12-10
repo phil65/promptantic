@@ -2,6 +2,7 @@
 
 from __future__ import annotations
 
+from enum import Enum
 import types
 from typing import Any, Literal, Protocol, TypeGuard, TypeVar, Union, get_args, get_origin
 
@@ -76,3 +77,13 @@ def is_import_string(typ: Any) -> TypeGuard[Any]:
             getattr(arg, "__name__", "") == "ImportString" for arg in args[1:]
         )
     return False
+
+
+def is_tuple_type(typ: Any) -> bool:
+    """Check if a type is a tuple type."""
+    return get_origin(typ) is tuple
+
+
+def is_enum_type(typ: Any) -> TypeGuard[type[Enum]]:
+    """Check if a type is an Enum type."""
+    return isinstance(typ, type) and issubclass(typ, Enum)

@@ -2,7 +2,8 @@
 
 from __future__ import annotations
 
-from typing import TYPE_CHECKING, Any
+from enum import Enum
+from typing import Any, TypeVar
 
 from prompt_toolkit.shortcuts import radiolist_dialog
 
@@ -10,20 +11,19 @@ from promptantic.exceptions import ValidationError
 from promptantic.handlers.base import BaseHandler
 
 
-if TYPE_CHECKING:
-    from enum import Enum
+E = TypeVar("E", bound=Enum)
 
 
-class EnumHandler(BaseHandler):
+class EnumHandler(BaseHandler[E]):
     """Handler for Enum types."""
 
     async def handle(
         self,
         field_name: str,
-        field_type: type[Enum],
+        field_type: type[E],
         description: str | None = None,
         **options: Any,
-    ) -> Enum:
+    ) -> E:
         """Handle enum input.
 
         Args:
@@ -37,16 +37,23 @@ class EnumHandler(BaseHandler):
 
         Raises:
             ValidationError: If selection is cancelled
+            KeyboardInterrupt: If Ctrl+C is pressed
         """
         # Create choices from enum values
         choices = [(member, f"{member.name} = {member.value}") for member in field_type]
 
-        # Let user select from enum values
-        selected = await radiolist_dialog(
-            title=f"Select {field_name}",
-            text=description or f"Choose a value for {field_name}:",
-            values=choices,
-        ).run_async()
+        print("\nUse arrow keys to select, Enter to confirm.")
+        print("Press Esc, q, or Ctrl+C to cancel.\n")
+
+        try:
+            selected = await radiolist_dialog(
+                title=f"Select {field_name}",
+                text=description or f"Choose a value for {field_name}:",
+                values=choices,
+            ).run_async()
+        except KeyboardInterrupt:
+            print("\nSelection cancelled with Ctrl+C")
+            raise
 
         if selected is None:
             msg = "Selection cancelled"

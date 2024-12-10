@@ -23,13 +23,13 @@ def get_literal_choices(field_type: type[Any]) -> list[tuple[Any, str]]:
     return [(value, str(value)) for value in values]
 
 
-class LiteralHandler(BaseHandler):
+class LiteralHandler(BaseHandler[Any]):
     """Handler for Literal types."""
 
     async def handle(
         self,
         field_name: str,
-        field_type: type[Any],
+        field_type: Any,
         description: str | None = None,
         **options: Any,
     ) -> Any:
@@ -46,15 +46,23 @@ class LiteralHandler(BaseHandler):
 
         Raises:
             ValidationError: If selection is cancelled
+            KeyboardInterrupt: If Ctrl+C is pressed
         """
-        choices = get_literal_choices(field_type)
+        # Create choices from literal values
+        choices = [(value, str(value)) for value in get_args(field_type)]
 
-        # Let user select from literal values
-        selected = await radiolist_dialog(
-            title=f"Select {field_name}",
-            text=description or f"Choose a value for {field_name}:",
-            values=choices,
-        ).run_async()
+        print("\nUse arrow keys to select, Enter to confirm.")
+        print("Press Esc, q, or Ctrl+C to cancel.\n")
+
+        try:
+            selected = await radiolist_dialog(
+                title=f"Select {field_name}",
+                text=description or f"Choose a value for {field_name}:",
+                values=choices,
+            ).run_async()
+        except KeyboardInterrupt:
+            print("\nSelection cancelled with Ctrl+C")
+            raise
 
         if selected is None:
             msg = "Selection cancelled"
