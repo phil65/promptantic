@@ -37,6 +37,7 @@ from promptantic.handlers.primitives import (
 from promptantic.handlers.sequences import ListHandler, SetHandler, TupleHandler
 from promptantic.handlers.special import (
     EmailHandler,
+    ImportStringHandler,
     PathHandler,
     SecretStrHandler,
     URLHandler,
@@ -46,6 +47,7 @@ from promptantic.handlers.unions import UnionHandler
 from promptantic.type_utils import (
     is_constrained_int,
     is_constrained_str,
+    is_import_string,
     is_literal_type,
     is_model_type,
     is_union_type,
@@ -174,7 +176,8 @@ class ModelGenerator:
                 return self._email_handler
             if getattr(field_info, "url", False):
                 return self._url_handler
-
+        if is_import_string(typ):
+            return ImportStringHandler(self)
         # For regular types, look up the handler
         handler = self._handlers.get(typ)
         if handler is None:

@@ -62,3 +62,17 @@ def is_constrained_int(typ: Any) -> TypeGuard[Any]:
 def is_constrained_str(typ: Any) -> TypeGuard[Any]:
     """Check if a type is a constrained str type."""
     return getattr(typ, "__origin__", None) is constr
+
+
+def is_import_string(typ: Any) -> TypeGuard[Any]:
+    """Check if a type is a Pydantic ImportString."""
+    origin = get_origin(typ)
+    if origin is not None:
+        args = get_args(typ)
+        if not args or len(args) < 2:  # noqa: PLR2004
+            return False
+        # Check that it's a string annotation with ImportString validator
+        return args[0] is str and any(
+            getattr(arg, "__name__", "") == "ImportString" for arg in args[1:]
+        )
+    return False
