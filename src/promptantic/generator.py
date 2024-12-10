@@ -7,6 +7,7 @@ from decimal import Decimal
 from enum import Enum
 import ipaddress
 from pathlib import Path
+import sys
 from typing import TYPE_CHECKING, Any, get_origin
 from uuid import UUID
 from zoneinfo import ZoneInfo
@@ -186,8 +187,28 @@ class ModelGenerator:
             raise NoHandlerError(msg)
         return handler
 
-    async def populate(self, model: ModelType) -> BaseModel:
+    def populate(self, model: ModelType) -> BaseModel:
         """Populate a model instance through interactive prompts.
+
+        This is a synchronous wrapper around the async populate method.
+
+        Args:
+            model: The model class or instance to populate
+
+        Returns:
+            A populated model instance
+
+        Raises:
+            NoHandlerError: If no handler is found for a field type
+        """
+        if sys.platform == "win32":
+            # Windows requires a specific event loop policy
+            asyncio.set_event_loop_policy(asyncio.WindowsSelectorEventLoopPolicy())
+
+        return asyncio.run(self.apopulate(model))
+
+    async def apopulate(self, model: ModelType) -> BaseModel:
+        """Asynchronously populate a model instance.
 
         Args:
             model: The model class or instance to populate
@@ -262,7 +283,7 @@ if __name__ == "__main__":
     async def main():
         # Create and use the generator
         generator = ModelGenerator()
-        person = await generator.populate(Person)
+        person = await generator.apopulate(Person)
         print(person)
 
     import asyncio

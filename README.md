@@ -64,7 +64,7 @@ class Person(BaseModel):
 
 # Create and use the generator
 generator = ModelGenerator()
-person = await generator.populate(Person)
+person = await generator.apopulate(Person)
 print(person)
 ```
 
@@ -120,7 +120,7 @@ class Person(BaseModel):
     address: Address = Field(description="Person's address")
 
 # Will prompt for all fields recursively
-person = await ModelGenerator().populate(Person)
+person = await ModelGenerator().apopulate(Person)
 ```
 
 ### Union Types
@@ -138,7 +138,7 @@ class Person(BaseModel):
     role: Student | Teacher  # Will show selection dialog
 
 # Will prompt for type selection before filling fields
-person = await ModelGenerator().populate(Person)
+person = await ModelGenerator().apopulate(Person)
 ```
 
 ### Styling
@@ -172,7 +172,7 @@ generator = ModelGenerator(
 from promptantic import ModelGenerator, PromptanticError
 
 try:
-    result = await ModelGenerator().populate(MyModel)
+    result = await ModelGenerator().apopulate(MyModel)
 except KeyboardInterrupt:
     print("Operation cancelled by user")
 except PromptanticError as e:

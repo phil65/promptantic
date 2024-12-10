@@ -37,4 +37,4 @@ class ModelHandler(BaseHandler):
             print(f"Description: {description}")
 
         # Use the generator to populate the nested model
-        return await self.generator.populate(field_type)
+        return await self.generator.apopulate(field_type)
