@@ -13,6 +13,21 @@ from promptantic.handlers.base import BaseHandler
 from promptantic.ui.formatting import create_field_prompt
 
 
+class NoneHandler(BaseHandler[None]):
+    """Handler for None type."""
+
+    async def handle(
+        self,
+        field_name: str,
+        field_type: type[None],
+        description: str | None = None,
+        default: Any = None,
+        **options: Any,
+    ) -> None:
+        """Handle None input - simply returns None."""
+        return
+
+
 class StrHandler(BaseHandler[str]):
     """Handler for string input."""
 

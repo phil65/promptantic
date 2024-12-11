@@ -34,6 +34,7 @@ from promptantic.handlers.primitives import (
     DecimalHandler,
     FloatHandler,
     IntHandler,
+    NoneHandler,
     StrHandler,
 )
 from promptantic.handlers.sequences import ListHandler, SetHandler, TupleHandler
@@ -100,6 +101,7 @@ class ModelGenerator:
         self.register_handler(float, FloatHandler(self))
         self.register_handler(bool, BoolHandler(self))
         self.register_handler(Decimal, DecimalHandler(self))
+        self.register_handler(type(None), NoneHandler(self))  # Add this line
 
         # Sequence types
         self.register_handler(list, ListHandler(self))
@@ -143,10 +145,12 @@ class ModelGenerator:
         """
         self._handlers[typ] = handler
 
-    def get_handler(self, typ: type, field_info: Any = None) -> TypeHandler:  # noqa: PLR0911
+    def get_handler(self, typ: type[Any] | None, field_info: Any = None) -> TypeHandler:  # noqa: PLR0911
         """Get a handler for the given type."""
-        # Handle None type (use str as default)
         typ = strip_annotated(typ)
+
+        if typ is type(None):
+            return self._handlers[type(None)]
 
         if typ is None:
             return self._handlers[str]
