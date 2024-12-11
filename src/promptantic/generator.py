@@ -238,11 +238,13 @@ class ModelGenerator:
         Raises:
             NoHandlerError: If no handler is found for a field type
         """
-        # Get the model class if an instance was passed
         if isinstance(model, type) and issubclass(model, BaseModel):
             model_cls = model
+            defaults = {}
         elif isinstance(model, BaseModel):
             model_cls = model.__class__
+            # Only get explicitly set values
+            defaults = model.model_dump(exclude_unset=True)
         else:
             msg = f"Expected BaseModel class or instance, got {type(model)}"
             raise ValueError(msg)  # noqa: TRY004
@@ -265,13 +267,16 @@ class ModelGenerator:
                 )
                 description = field.description
 
+                # Use instance value as default if it was set, otherwise use field default
+                field_default = defaults.get(name, field.default)
+
                 while True:
                     try:
                         value = await handler.handle(
                             field_name=name,
-                            field_type=field_type,  # type: ignore
+                            field_type=field_type,
                             description=description,
-                            default=field.default,
+                            default=field_default,
                             field_info=field,
                         )
                         values[name] = value
