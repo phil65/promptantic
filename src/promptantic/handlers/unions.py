@@ -5,6 +5,7 @@ from __future__ import annotations
 from typing import Any
 
 from prompt_toolkit.shortcuts import radiolist_dialog
+from pydantic.fields import PydanticUndefined
 
 from promptantic.exceptions import ValidationError
 from promptantic.handlers.base import BaseHandler
@@ -55,7 +56,7 @@ class UnionHandler(BaseHandler[Any]):
 
         # If we have a default, try to determine its type
         default_type = None
-        if default is not None:
+        if default is not None and default is not PydanticUndefined:
             for typ in types:
                 try:
                     if typ is None and default is None:

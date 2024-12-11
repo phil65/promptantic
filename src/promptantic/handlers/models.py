@@ -6,6 +6,7 @@ from typing import Any
 
 from prompt_toolkit.shortcuts import PromptSession
 from pydantic import BaseModel, ValidationError
+from pydantic.fields import PydanticUndefined
 
 from promptantic.handlers.base import BaseHandler
 
@@ -15,7 +16,7 @@ class ModelHandler(BaseHandler):
 
     def format_default(self, default: Any) -> str | None:
         """Format model default value for display."""
-        if default is None:
+        if default is None or default is PydanticUndefined:
             return None
         if isinstance(default, dict):
             return "default: <from dict>"
@@ -49,7 +50,11 @@ class ModelHandler(BaseHandler):
         print(f"\nPopulating nested model: {field_name}")
         if description:
             print(f"Description: {description}")
-
+        if default is PydanticUndefined:
+            # Create a new instance with factory default
+            field_info = options.get("field_info")
+            if field_info and field_info.default_factory:
+                default = field_info.default_factory()
         if default is not None:
             print("\nDefault value available. Options:")
             print("1. Use default values")

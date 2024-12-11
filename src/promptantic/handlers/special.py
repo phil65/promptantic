@@ -9,6 +9,7 @@ from uuid import UUID
 
 from prompt_toolkit.shortcuts import PromptSession
 from pydantic import SecretStr
+from pydantic_core import PydanticUndefined
 
 from promptantic.completers import EnhancedPathCompleter, ImportStringCompleter
 from promptantic.exceptions import ValidationError
@@ -61,7 +62,7 @@ class PathHandler(BaseHandler):
 
     def format_default(self, default: Any) -> str | None:
         """Format path default value."""
-        if default is None:
+        if default is None or default is PydanticUndefined:
             return None
         if isinstance(default, str | Path):
             return str(Path(default).expanduser())
@@ -123,7 +124,7 @@ class UUIDHandler(BaseHandler):
 
     def format_default(self, default: Any) -> str | None:
         """Format UUID default value."""
-        if default is None:
+        if default is None or default is PydanticUndefined:
             return None
         # Convert string to UUID if needed
         if isinstance(default, str):
