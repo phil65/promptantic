@@ -27,14 +27,28 @@ class SecretStrHandler(BaseHandler):
         field_name: str,
         field_type: type[SecretStr],
         description: str | None = None,
+        default: SecretStr | None = None,
         **options: Any,
     ) -> SecretStr:
         """Handle SecretStr input."""
         session = PromptSession()
+
+        # Show placeholder for default if exists
+        default_placeholder = "********" if default is not None else None
+
         result = await session.prompt_async(
-            create_field_prompt(field_name, description),
+            create_field_prompt(
+                field_name,
+                description,
+                default=default_placeholder,
+            ),
             is_password=True,
         )
+
+        # Handle empty input with default
+        if not result and default is not None:
+            return default
+
         return SecretStr(result)
 
 
@@ -45,21 +59,53 @@ class PathHandler(BaseHandler):
         super().__init__(generator)
         self.completer = EnhancedPathCompleter()
 
+    def format_default(self, default: Any) -> str | None:
+        """Format path default value."""
+        if default is None:
+            return None
+        if isinstance(default, str | Path):
+            return str(Path(default).expanduser())
+        return str(default)
+
     async def handle(
         self,
         field_name: str,
         field_type: type[Path],
         description: str | None = None,
+        default: Path | str | None = None,
         **options: Any,
     ) -> Path:
         """Handle Path input."""
         session = PromptSession(completer=self.completer)
+        default_str = self.format_default(default)
+
         while True:
             try:
                 result = await session.prompt_async(
-                    create_field_prompt(field_name, description),
+                    create_field_prompt(
+                        field_name,
+                        description or "Enter a file path",
+                        default=default_str,
+                    ),
+                    default=default_str if default_str is not None else "",
                 )
-                path = Path(result).resolve()
+
+                # Handle empty input with default
+                if not result and default is not None:
+                    return Path(default).expanduser().resolve()
+
+                path = Path(result).expanduser().resolve()
+
+                # Optional: Add validation for existence/type
+                if options.get("must_exist", False) and not path.exists():
+                    msg = f"Path does not exist: {path}"
+                    raise ValidationError(msg)  # noqa: TRY301
+                if options.get("file_only", False) and not path.is_file():
+                    msg = f"Not a file: {path}"
+                    raise ValidationError(msg)  # noqa: TRY301
+                if options.get("dir_only", False) and not path.is_dir():
+                    msg = f"Not a directory: {path}"
+                    raise ValidationError(msg)  # noqa: TRY301
             except Exception as e:
                 msg = f"Invalid path: {e!s}"
                 raise ValidationError(msg) from e
@@ -70,20 +116,45 @@ class PathHandler(BaseHandler):
 class UUIDHandler(BaseHandler):
     """Handler for UUID input."""
 
+    def format_default(self, default: Any) -> str | None:
+        """Format UUID default value."""
+        if default is None:
+            return None
+        # Convert string to UUID if needed
+        if isinstance(default, str):
+            default = UUID(default)
+        return str(default)
+
     async def handle(
         self,
         field_name: str,
         field_type: type[UUID],
         description: str | None = None,
+        default: UUID | str | None = None,
         **options: Any,
     ) -> UUID:
         """Handle UUID input."""
         session = PromptSession()
+        default_str = self.format_default(default)
+
         while True:
             try:
                 result = await session.prompt_async(
-                    create_field_prompt(field_name, description),
+                    create_field_prompt(
+                        field_name,
+                        description
+                        or "Enter UUID (e.g. 123e4567-e89b-12d3-a456-426614174000)",
+                        default=default_str,
+                    ),
+                    default=default_str if default_str is not None else "",
                 )
+
+                # Handle empty input with default
+                if not result and default is not None:
+                    if isinstance(default, str):
+                        return UUID(default)
+                    return default
+
                 return UUID(result)
             except ValueError as e:
                 msg = f"Invalid UUID: {e!s}"
@@ -100,17 +171,29 @@ class EmailHandler(BaseHandler):
         field_name: str,
         field_type: type[str],
         description: str | None = None,
+        default: str | None = None,
         **options: Any,
     ) -> str:
         """Handle email input."""
         session = PromptSession()
+
         while True:
             result = await session.prompt_async(
                 create_field_prompt(
                     field_name,
                     description or "Enter a valid email address",
+                    default=default,
                 ),
+                default=default if default is not None else "",
             )
+
+            # Handle empty input with default
+            if not result and default is not None:
+                if not self._email_regex.match(default):
+                    msg = f"Default email is invalid: {default}"
+                    raise ValidationError(msg)
+                return default
+
             if self._email_regex.match(result):
                 return result
 
@@ -136,6 +219,7 @@ class URLHandler(BaseHandler):
         field_name: str,
         field_type: type[str],
         description: str | None = None,
+        default: str | None = None,
         **options: Any,
     ) -> str:
         """Handle URL input."""
@@ -145,8 +229,18 @@ class URLHandler(BaseHandler):
                 create_field_prompt(
                     field_name,
                     description or "Enter a valid URL",
+                    default=default,
                 ),
+                default=default if default is not None else "",
             )
+
+            # Handle empty input with default
+            if not result and default is not None:
+                if not self._url_regex.match(default):
+                    msg = f"Default URL is invalid: {default}"
+                    raise ValidationError(msg)
+                return default
+
             if self._url_regex.match(result):
                 return result
 
@@ -164,24 +258,12 @@ class ImportStringHandler(BaseHandler[str]):
     async def handle(
         self,
         field_name: str,
-        field_type: Any,  # type: ignore
+        field_type: Any,
         description: str | None = None,
+        default: str | None = None,
         **options: Any,
     ) -> str:
-        """Handle ImportString input.
-
-        Args:
-            field_name: Name of the field
-            field_type: The ImportString type annotation
-            description: Optional field description
-            **options: Additional options
-
-        Returns:
-            A valid import string
-
-        Raises:
-            ValidationError: If the input is not a valid import string
-        """
+        """Handle ImportString input."""
         # Get the actual validation function from the Annotated type
         validator = None
         origin = get_origin(field_type)
@@ -200,12 +282,23 @@ class ImportStringHandler(BaseHandler[str]):
             result = await session.prompt_async(
                 create_field_prompt(
                     field_name,
-                    description or MSG,
+                    description or "Enter a Python import path",
+                    default=default,
                 ),
+                default=default if default is not None else "",
             )
 
+            # Handle empty input with default
+            if not result and default is not None:
+                try:
+                    validator(default)
+                except ValueError as e:
+                    msg = f"Default import path is invalid: {e}"
+                    raise ValidationError(msg) from e
+                else:
+                    return default
+
             try:
-                # Use the validator from the Annotated type
                 validator(result)
             except ValueError as e:
                 msg = f"Invalid import path: {e}"

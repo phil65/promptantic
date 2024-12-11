@@ -24,6 +24,7 @@ class TypeHandler(Protocol[T]):
         field_name: str,
         field_type: type[T],
         description: str | None = None,
+        default: Any = None,
         **options: Any,
     ) -> T:
         """Handle input for a specific type."""

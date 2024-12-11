@@ -2,6 +2,8 @@
 
 from typing import Any, get_args, get_origin
 
+from prompt_toolkit.shortcuts import PromptSession
+
 from promptantic.exceptions import ValidationError
 from promptantic.handlers.base import BaseHandler
 
@@ -9,16 +11,23 @@ from promptantic.handlers.base import BaseHandler
 class SequenceHandler(BaseHandler[tuple[Any, ...]]):
     """Base handler for sequence types."""
 
+    def format_default(self, default: Any) -> str | None:
+        """Format sequence default value."""
+        if default is None:
+            return None
+        return f"[{len(default)} items]"
+
     async def handle(
         self,
         field_name: str,
         field_type: type[tuple[Any, ...]] | type[list[Any]] | type[set[Any]],
         description: str | None = None,
+        default: tuple[Any, ...] | list[Any] | set[Any] | None = None,
         **options: Any,
     ) -> tuple[Any, ...]:
         """Handle sequence input."""
         # Get the type of items in the sequence
-        item_type = get_args(field_type)[0]
+        item_type = get_args(field_type)[0] if get_args(field_type) else Any
         origin = get_origin(field_type)
         if origin is None:
             msg = f"Invalid sequence type: {field_type}"
@@ -30,7 +39,28 @@ class SequenceHandler(BaseHandler[tuple[Any, ...]]):
         items: list[Any] = []
         index = 0
 
-        print(f"\nEntering items for {field_name} (press Ctrl-D when done):")
+        if default:
+            print(f"\nDefault values available for {field_name}:")
+            print("1. Use default values")
+            print("2. Enter new values")
+            print("3. Start with defaults and add more")
+
+            session = PromptSession()
+            while True:
+                choice = await session.prompt_async("Choose option (1-3): ")
+                if choice == "1":
+                    return tuple(default)
+                if choice == "2":
+                    break
+                if choice == "3":
+                    items = list(default)
+                    index = len(items)
+                    break
+                print("Invalid choice, please try again")
+        else:
+            print(f"\nEntering items for {field_name}")
+
+        print("Press Ctrl-D when done, Ctrl-C to remove last item")
 
         while True:
             try:
@@ -63,13 +93,48 @@ class ListHandler(BaseHandler[list[Any]]):
         field_name: str,
         field_type: type[list[Any]],
         description: str | None = None,
+        default: list[Any] | None = None,
         **options: Any,
     ) -> list[Any]:
         """Handle list input."""
-        result = await SequenceHandler(self.generator).handle(
-            field_name, field_type, description, **options
-        )
-        return list(result)
+        # Get the type of items in the list
+        item_type = get_args(field_type)[0] if get_args(field_type) else Any
+
+        # Get handler for item type
+        item_handler = self.generator.get_handler(item_type)
+
+        items: list[Any] = []
+        index = 0
+
+        print(f"\nEntering items for {field_name}")
+        if default:
+            print(f"Default values: {default}")
+            print("Press Enter to keep defaults or input new values")
+            items = default.copy()
+            index = len(default)
+        print("Press Ctrl-D when done, Ctrl-C to remove last item")
+
+        while True:
+            try:
+                # Create prompt for each item
+                item_name = f"{field_name}[{index}]"
+                value = await item_handler.handle(
+                    field_name=item_name,
+                    field_type=item_type,
+                    description=None,
+                )
+                items.append(value)
+                index += 1
+            except EOFError:
+                break
+            except KeyboardInterrupt:
+                if items:
+                    items.pop()
+                    index -= 1
+                    print("\nRemoved last item")
+                continue
+
+        return items
 
 
 class SetHandler(BaseHandler[set[Any]]):
@@ -80,11 +145,16 @@ class SetHandler(BaseHandler[set[Any]]):
         field_name: str,
         field_type: type[set[Any]],
         description: str | None = None,
+        default: set[Any] | None = None,
         **options: Any,
     ) -> set[Any]:
         """Handle set input."""
         result = await SequenceHandler(self.generator).handle(
-            field_name, field_type, description, **options
+            field_name=field_name,
+            field_type=field_type,
+            description=description,
+            default=list(default) if default is not None else None,
+            **options,
         )
         return set(result)
 
@@ -97,6 +167,7 @@ class TupleHandler(BaseHandler[tuple[Any, ...]]):
         field_name: str,
         field_type: type[tuple[Any, ...]],
         description: str | None = None,
+        default: tuple[Any, ...] | None = None,
         **options: Any,
     ) -> tuple[Any, ...]:
         """Handle tuple input."""
@@ -105,13 +176,19 @@ class TupleHandler(BaseHandler[tuple[Any, ...]]):
         if not args:
             # Handle tuple without type args as tuple[Any, ...]
             return await SequenceHandler(self.generator).handle(
-                field_name, field_type, description, **options
+                field_name=field_name,
+                field_type=field_type,
+                description=description,
+                default=default,
+                **options,
             )
 
         # Handle fixed-length tuples
         if not any(arg is ... for arg in args):
             values: list[Any] = []
-            for i, item_type in enumerate(args):
+            default_values = default if default is not None else [None] * len(args)
+
+            for i, (item_type, default_value) in enumerate(zip(args, default_values)):
                 item_name = f"{field_name}[{i}]"
                 item_handler = self.generator.get_handler(item_type)
                 # Create a type-specific description
@@ -128,6 +205,8 @@ class TupleHandler(BaseHandler[tuple[Any, ...]]):
                             field_name=item_name,
                             field_type=item_type,
                             description=item_desc,
+                            default=default_value,
+                            **options,
                         )
                         values.append(value)
                         break
@@ -139,5 +218,9 @@ class TupleHandler(BaseHandler[tuple[Any, ...]]):
 
         # Handle variable-length tuples (tuple[int, ...])
         return await SequenceHandler(self.generator).handle(
-            field_name, field_type, description, **options
+            field_name=field_name,
+            field_type=field_type,
+            description=description,
+            default=default,
+            **options,
         )

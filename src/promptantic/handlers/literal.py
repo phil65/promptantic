@@ -31,25 +31,21 @@ class LiteralHandler(BaseHandler[Any]):
         field_name: str,
         field_type: Any,
         description: str | None = None,
+        default: Any = None,
         **options: Any,
     ) -> Any:
-        """Handle Literal input.
+        """Handle Literal input."""
+        # Get allowed values from the Literal type
+        values = get_args(field_type)
+        choices = [(value, str(value)) for value in values]
 
-        Args:
-            field_name: Name of the field
-            field_type: The Literal type
-            description: Optional field description
-            **options: Additional options
-
-        Returns:
-            Selected literal value
-
-        Raises:
-            ValidationError: If selection is cancelled
-            KeyboardInterrupt: If Ctrl+C is pressed
-        """
-        # Create choices from literal values
-        choices = [(value, str(value)) for value in get_args(field_type)]
+        # Find default index if exists
+        default_idx = None
+        if default is not None:
+            for idx, (value, _) in enumerate(choices):
+                if value == default:
+                    default_idx = idx
+                    break
 
         print("\nUse arrow keys to select, Enter to confirm.")
         print("Press Esc, q, or Ctrl+C to cancel.\n")
@@ -59,12 +55,15 @@ class LiteralHandler(BaseHandler[Any]):
                 title=f"Select {field_name}",
                 text=description or f"Choose a value for {field_name}:",
                 values=choices,
+                default=choices[default_idx][0] if default_idx is not None else None,
             ).run_async()
         except KeyboardInterrupt:
             print("\nSelection cancelled with Ctrl+C")
             raise
 
         if selected is None:
+            if default is not None:
+                return default
             msg = "Selection cancelled"
             raise ValidationError(msg)
 

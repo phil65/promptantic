@@ -253,6 +253,8 @@ class ModelGenerator:
                             field_name=name,
                             field_type=field_type,  # type: ignore
                             description=description,
+                            default=field.default,
+                            field_info=field,
                         )
                         values[name] = value
                         break

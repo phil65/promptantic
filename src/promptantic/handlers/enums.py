@@ -22,25 +22,20 @@ class EnumHandler(BaseHandler[E]):
         field_name: str,
         field_type: type[E],
         description: str | None = None,
+        default: E | None = None,
         **options: Any,
     ) -> E:
-        """Handle enum input.
-
-        Args:
-            field_name: Name of the field
-            field_type: The enum class
-            description: Optional field description
-            **options: Additional options
-
-        Returns:
-            Selected enum value
-
-        Raises:
-            ValidationError: If selection is cancelled
-            KeyboardInterrupt: If Ctrl+C is pressed
-        """
+        """Handle enum input."""
         # Create choices from enum values
         choices = [(member, f"{member.name} = {member.value}") for member in field_type]
+
+        # Find default index if exists
+        default_idx = None
+        if default is not None:
+            for idx, (value, _) in enumerate(choices):
+                if value == default:
+                    default_idx = idx
+                    break
 
         print("\nUse arrow keys to select, Enter to confirm.")
         print("Press Esc, q, or Ctrl+C to cancel.\n")
@@ -50,12 +45,15 @@ class EnumHandler(BaseHandler[E]):
                 title=f"Select {field_name}",
                 text=description or f"Choose a value for {field_name}:",
                 values=choices,
+                default=choices[default_idx][0] if default_idx is not None else None,
             ).run_async()
         except KeyboardInterrupt:
             print("\nSelection cancelled with Ctrl+C")
             raise
 
         if selected is None:
+            if default is not None:
+                return default
             msg = "Selection cancelled"
             raise ValidationError(msg)
 

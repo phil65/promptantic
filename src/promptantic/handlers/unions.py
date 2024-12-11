@@ -28,35 +28,47 @@ def get_type_display_name(typ: type[Any]) -> str:
 class UnionHandler(BaseHandler[Any]):
     """Handler for union types."""
 
+    def get_type_display_name(self, typ: type[Any]) -> str:
+        """Get user-friendly display name for a type."""
+        if is_model_type(typ):
+            return typ.__name__ if hasattr(typ, "__name__") else str(typ)
+        if hasattr(typ, "__name__"):
+            return typ.__name__.lower()
+        return str(typ)
+
     async def handle(
         self,
         field_name: str,
         field_type: Any,
         description: str | None = None,
+        default: Any = None,
         **options: Any,
     ) -> Any:
-        """Handle union type input.
-
-        Args:
-            field_name: Name of the field
-            field_type: The union type
-            description: Optional field description
-            **options: Additional options
-
-        Returns:
-            A value of one of the union types
-
-        Raises:
-            ValidationError: If selection is cancelled
-            KeyboardInterrupt: If Ctrl+C is pressed
-        """
-        # Get the possible types from the union
+        """Handle union type input."""
         types = get_union_types(field_type)
 
-        # Create choices for the dialog
-        choices = [(typ, get_type_display_name(typ)) for typ in types]
+        # If we have a default, try to determine its type
+        default_type = None
+        if default is not None:
+            for typ in types:
+                try:
+                    if isinstance(default, typ):
+                        default_type = typ
+                        break
+                except TypeError:
+                    continue
 
-        print("\nUse arrow keys to select, Enter to confirm.")
+        # Create choices for type selection
+        choices = [(typ, self.get_type_display_name(typ)) for typ in types]
+
+        # If we have a default type, put it first
+        if default_type:
+            choices = [(default_type, self.get_type_display_name(default_type))] + [
+                (t, n) for t, n in choices if t != default_type
+            ]
+
+        print("\nSelect type to use:")
+        print("Use arrow keys to select, Enter to confirm.")
         print("Press Esc, q, or Ctrl+C to cancel.\n")
 
         try:
@@ -64,6 +76,7 @@ class UnionHandler(BaseHandler[Any]):
                 title=f"Select type for {field_name}",
                 text=description or "Choose the type to use:",
                 values=choices,
+                default=default_type if default_type else None,
             ).run_async()
         except KeyboardInterrupt:
             print("\nSelection cancelled with Ctrl+C")
@@ -75,9 +88,14 @@ class UnionHandler(BaseHandler[Any]):
 
         # Get handler for selected type and use it
         handler = self.generator.get_handler(selected_type)
+
+        # Pass the default only if it matches the selected type
+        type_default = default if selected_type == default_type else None
+
         return await handler.handle(
             field_name=field_name,
             field_type=selected_type,
             description=description,
+            default=type_default,
             **options,
         )
