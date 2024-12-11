@@ -6,6 +6,7 @@ from enum import Enum
 import types
 from typing import (
     TYPE_CHECKING,
+    Annotated,
     Any,
     Literal,
     Protocol,
@@ -45,8 +46,23 @@ class TypeHandler(Protocol[T]):
         ...
 
 
+def strip_annotated(typ: Any) -> Any:
+    """Strip Annotated wrapper from a type if present.
+
+    Args:
+        typ: The type to strip
+
+    Returns:
+        The underlying type without Annotated wrapper
+    """
+    if get_origin(typ) is Annotated:
+        return get_args(typ)[0]
+    return typ
+
+
 def is_union_type(typ: Any) -> TypeGuard[Any]:
     """Check if a type is a Union type."""
+    typ = strip_annotated(typ)
     origin = get_origin(typ)
     return origin is Union or origin is types.UnionType
 
@@ -56,32 +72,37 @@ def get_union_types(typ: Any) -> tuple[type, ...]:
     if not is_union_type(typ):
         msg = "Not a union type"
         raise ValueError(msg)
-    return get_args(typ)
+    return get_args(strip_annotated(typ))
 
 
 def is_model_type(typ: Any) -> TypeGuard[ModelType]:
     """Check if a type is a Pydantic model type."""
+    typ = strip_annotated(typ)
     return isinstance(typ, type) and issubclass(typ, BaseModel)
 
 
 def is_literal_type(typ: Any) -> TypeGuard[Any]:
     """Check if a type is a Literal type."""
+    typ = strip_annotated(typ)
     origin = get_origin(typ)
     return origin is Literal
 
 
 def is_constrained_int(typ: Any) -> TypeGuard[Any]:
     """Check if a type is a constrained int type."""
+    typ = strip_annotated(typ)
     return getattr(typ, "__origin__", None) is conint
 
 
 def is_constrained_str(typ: Any) -> TypeGuard[Any]:
     """Check if a type is a constrained str type."""
+    typ = strip_annotated(typ)
     return getattr(typ, "__origin__", None) is constr
 
 
 def is_import_string(typ: Any) -> TypeGuard[Any]:
     """Check if a type is a Pydantic ImportString."""
+    typ = strip_annotated(typ)
     origin = get_origin(typ)
     if origin is not None:
         args = get_args(typ)
@@ -96,11 +117,13 @@ def is_import_string(typ: Any) -> TypeGuard[Any]:
 
 def is_tuple_type(typ: Any) -> bool:
     """Check if a type is a tuple type."""
+    typ = strip_annotated(typ)
     return get_origin(typ) is tuple
 
 
 def is_enum_type(typ: Any) -> TypeGuard[type[Enum]]:
     """Check if a type is an Enum type."""
+    typ = strip_annotated(typ)
     return isinstance(typ, type) and issubclass(typ, Enum)
 
 

@@ -55,6 +55,7 @@ from promptantic.type_utils import (
     is_model_type,
     is_tuple_type,
     is_union_type,
+    strip_annotated,
 )
 from promptantic.ui.style import DEFAULT_STYLE
 
@@ -142,6 +143,8 @@ class ModelGenerator:
     def get_handler(self, typ: type, field_info: Any = None) -> TypeHandler:  # noqa: PLR0911
         """Get a handler for the given type."""
         # Handle None type (use str as default)
+        typ = strip_annotated(typ)
+
         if typ is None:
             return self._handlers[str]
 

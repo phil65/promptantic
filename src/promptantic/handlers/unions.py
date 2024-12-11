@@ -8,7 +8,7 @@ from prompt_toolkit.shortcuts import radiolist_dialog
 
 from promptantic.exceptions import ValidationError
 from promptantic.handlers.base import BaseHandler
-from promptantic.type_utils import get_union_types, is_model_type
+from promptantic.type_utils import get_union_types, is_model_type, strip_annotated
 
 
 def get_type_display_name(typ: type[Any] | None) -> str:
@@ -49,6 +49,8 @@ class UnionHandler(BaseHandler[Any]):
         **options: Any,
     ) -> Any:
         """Handle union type input."""
+        field_type = strip_annotated(field_type)
+
         types = get_union_types(field_type)
 
         # If we have a default, try to determine its type
