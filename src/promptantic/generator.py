@@ -9,7 +9,7 @@ from enum import Enum
 import ipaddress
 from pathlib import Path
 import sys
-from typing import TYPE_CHECKING, Any, TypeVar, get_origin
+from typing import TYPE_CHECKING, Any, TypeVar, get_origin, overload
 from uuid import UUID
 from zoneinfo import ZoneInfo
 
@@ -194,6 +194,12 @@ class ModelGenerator:
             raise NoHandlerError(msg)
         return handler
 
+    @overload
+    def populate(self, model: type[M]) -> M: ...
+
+    @overload
+    def populate(self, model: M) -> M: ...
+
     def populate(self, model: type[M] | M) -> M:
         """Populate a model instance through interactive prompts.
 
@@ -213,6 +219,12 @@ class ModelGenerator:
             asyncio.set_event_loop_policy(asyncio.WindowsSelectorEventLoopPolicy())
 
         return asyncio.run(self.apopulate(model))
+
+    @overload
+    async def apopulate(self, model: type[M]) -> M: ...
+
+    @overload
+    async def apopulate(self, model: M) -> M: ...
 
     async def apopulate(self, model: type[M] | M) -> M:
         """Asynchronously populate a model instance.
