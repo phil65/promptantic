@@ -3,6 +3,7 @@
 from typing import Any, get_args, get_origin
 
 from prompt_toolkit.shortcuts import PromptSession
+from pydantic_core import PydanticUndefined
 
 from promptantic.exceptions import ValidationError
 from promptantic.handlers.base import BaseHandler
@@ -230,3 +231,87 @@ class TupleHandler(BaseHandler[tuple[Any, ...]]):
             default=default,
             **options,
         )
+
+
+class DictHandler(BaseHandler[dict[Any, Any]]):
+    """Handler for dictionary input."""
+
+    def format_default(self, default: Any) -> str | None:
+        """Format dictionary default value."""
+        if default is None or default is PydanticUndefined:
+            return None
+        return f"[{len(default)} items]"
+
+    async def handle(
+        self,
+        field_name: str,
+        field_type: type[dict[Any, Any]],
+        description: str | None = None,
+        default: dict[Any, Any] | None = None,
+        **options: Any,
+    ) -> dict[Any, Any]:
+        """Handle dictionary input."""
+        # Get the key and value types from the generic parameters
+        key_type, value_type = get_args(field_type)
+
+        # Get handlers for key and value types
+        key_handler = self.generator.get_handler(key_type)
+        value_handler = self.generator.get_handler(value_type)
+
+        items: dict[Any, Any] = {}
+
+        if default is not None and default is not PydanticUndefined:
+            print(f"\nDefault values available for {field_name}:")
+            print("1. Use default values")
+            print("2. Enter new values")
+            print("3. Start with defaults and add more")
+
+            session = PromptSession()
+            while True:
+                choice = await session.prompt_async("Choose option (1-3): ")
+                if choice == "1":
+                    return dict(default)
+                if choice == "2":
+                    break
+                if choice == "3":
+                    items = dict(default)
+                    break
+                print("Invalid choice, please try again")
+        else:
+            print(f"\nEntering items for {field_name}")
+
+        print("Press Ctrl-D when done, Ctrl-C to remove last item")
+
+        while True:
+            try:
+                # Get key
+                key_name = f"{field_name} key"
+                key = await key_handler.handle(
+                    field_name=key_name,
+                    field_type=key_type,
+                    description="Enter key",
+                )
+
+                # Get value
+                value_name = f"{field_name}[{key}]"
+                value = await value_handler.handle(
+                    field_name=value_name,
+                    field_type=value_type,
+                    description=description,
+                )
+
+                items[key] = value
+
+            except EOFError:
+                break
+            except KeyboardInterrupt:
+                if items:
+                    last_key = next(reversed(items))
+                    items.pop(last_key)
+                    print("\nRemoved last item")
+                continue
+            except ValidationError:
+                print("\nValidation failed, try again...")
+                continue
+
+        return items

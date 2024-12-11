@@ -37,7 +37,12 @@ from promptantic.handlers.primitives import (
     NoneHandler,
     StrHandler,
 )
-from promptantic.handlers.sequences import ListHandler, SetHandler, TupleHandler
+from promptantic.handlers.sequences import (
+    DictHandler,
+    ListHandler,
+    SetHandler,
+    TupleHandler,
+)
 from promptantic.handlers.special import (
     EmailHandler,
     ImportStringHandler,
@@ -105,6 +110,7 @@ class ModelGenerator:
 
         # Sequence types
         self.register_handler(list, ListHandler(self))
+        self.register_handler(dict, DictHandler(self))
         self.register_handler(set, SetHandler(self))
         self.register_handler(tuple, TupleHandler(self))
         # Model handler
