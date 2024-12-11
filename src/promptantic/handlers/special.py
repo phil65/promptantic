@@ -78,6 +78,8 @@ class PathHandler(BaseHandler):
         """Handle Path input."""
         session = PromptSession(completer=self.completer)
         default_str = self.format_default(default)
+        field_info = options.get("field_info")
+        field_extra = getattr(field_info, "json_schema_extra", {}) if field_info else {}
 
         while True:
             try:
@@ -97,13 +99,13 @@ class PathHandler(BaseHandler):
                 path = Path(result).expanduser().resolve()
 
                 # Optional: Add validation for existence/type
-                if options.get("must_exist", False) and not path.exists():
+                if field_extra.get("must_exist", False) and not path.exists():
                     msg = f"Path does not exist: {path}"
                     raise ValidationError(msg)  # noqa: TRY301
-                if options.get("file_only", False) and not path.is_file():
+                if field_extra.get("file_only", False) and not path.is_file():
                     msg = f"Not a file: {path}"
                     raise ValidationError(msg)  # noqa: TRY301
-                if options.get("dir_only", False) and not path.is_dir():
+                if field_extra.get("dir_only", False) and not path.is_dir():
                     msg = f"Not a directory: {path}"
                     raise ValidationError(msg)  # noqa: TRY301
             except Exception as e:
@@ -176,6 +178,12 @@ class EmailHandler(BaseHandler):
     ) -> str:
         """Handle email input."""
         session = PromptSession()
+        field_info = options.get("field_info")
+        field_extra = getattr(field_info, "json_schema_extra", {}) if field_info else {}
+
+        # Get custom regex pattern if provided
+        custom_pattern = field_extra.get("email_pattern")
+        regex = re.compile(custom_pattern) if custom_pattern else self._email_regex
 
         while True:
             result = await session.prompt_async(
@@ -189,12 +197,12 @@ class EmailHandler(BaseHandler):
 
             # Handle empty input with default
             if not result and default is not None:
-                if not self._email_regex.match(default):
+                if not regex.match(default):
                     msg = f"Default email is invalid: {default}"
                     raise ValidationError(msg)
                 return default
 
-            if self._email_regex.match(result):
+            if regex.match(result):
                 return result
 
             msg = "Invalid email address format"
@@ -224,6 +232,13 @@ class URLHandler(BaseHandler):
     ) -> str:
         """Handle URL input."""
         session = PromptSession()
+        field_info = options.get("field_info")
+        field_extra = getattr(field_info, "json_schema_extra", {}) if field_info else {}
+
+        # Get custom regex pattern if provided
+        custom_pattern = field_extra.get("url_pattern")
+        regex = re.compile(custom_pattern) if custom_pattern else self._url_regex
+
         while True:
             result = await session.prompt_async(
                 create_field_prompt(
@@ -236,12 +251,12 @@ class URLHandler(BaseHandler):
 
             # Handle empty input with default
             if not result and default is not None:
-                if not self._url_regex.match(default):
+                if not regex.match(default):
                     msg = f"Default URL is invalid: {default}"
                     raise ValidationError(msg)
                 return default
 
-            if self._url_regex.match(result):
+            if regex.match(result):
                 return result
 
             msg = "Invalid URL format"
