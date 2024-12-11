@@ -6,6 +6,7 @@ from prompt_toolkit.shortcuts import PromptSession
 
 from promptantic.exceptions import ValidationError
 from promptantic.handlers.base import BaseHandler
+from promptantic.type_utils import is_valid_sequence
 
 
 class SequenceHandler(BaseHandler[tuple[Any, ...]]):
@@ -39,7 +40,7 @@ class SequenceHandler(BaseHandler[tuple[Any, ...]]):
         items: list[Any] = []
         index = 0
 
-        if default is not None and hasattr(default, "__iter__"):
+        if is_valid_sequence(default):
             print(f"\nDefault values available for {field_name}:")
             print("1. Use default values")
             print("2. Enter new values")
@@ -49,6 +50,7 @@ class SequenceHandler(BaseHandler[tuple[Any, ...]]):
             while True:
                 choice = await session.prompt_async("Choose option (1-3): ")
                 if choice == "1":
+                    # default is guaranteed to be Iterable here due to TypeGuard
                     return tuple(default)
                 if choice == "2":
                     break
@@ -69,7 +71,7 @@ class SequenceHandler(BaseHandler[tuple[Any, ...]]):
                 value = await item_handler.handle(
                     field_name=item_name,
                     field_type=item_type,
-                    description=None,
+                    description=description,
                 )
                 items.append(value)
                 index += 1
@@ -108,7 +110,7 @@ class ListHandler(BaseHandler[list[Any]]):
 
         print(f"\nEntering items for {field_name}")
         # Check if we have a valid default value
-        if default is not None and hasattr(default, "__iter__"):
+        if is_valid_sequence(default):
             print(f"Default values: {default}")
             print("Press Enter to keep defaults or input new values")
             items = list(default)
@@ -122,7 +124,7 @@ class ListHandler(BaseHandler[list[Any]]):
                 value = await item_handler.handle(
                     field_name=item_name,
                     field_type=item_type,
-                    description=None,
+                    description=description,
                 )
                 items.append(value)
                 index += 1
@@ -187,7 +189,10 @@ class TupleHandler(BaseHandler[tuple[Any, ...]]):
         # Handle fixed-length tuples
         if not any(arg is ... for arg in args):
             values: list[Any] = []
-            default_values = default if default is not None else [None] * len(args)
+            # Create default values array
+            default_values: list[Any] = (
+                list(default) if is_valid_sequence(default) else [None] * len(args)
+            )
 
             for i, (item_type, default_value) in enumerate(zip(args, default_values)):
                 item_name = f"{field_name}[{i}]"

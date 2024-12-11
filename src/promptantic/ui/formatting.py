@@ -24,17 +24,24 @@ def create_field_prompt(
         ("class:field-name", field_name),
     ]
 
-    parts = []
+    # Always show description if available, independently of other parts
     if description:
-        parts.append(f"({description})")
-    if default is not None:
-        parts.append(f"[default: {default}]")
-
-    if parts:
         message.extend([
-            ("", ": "),
-            ("class:field-description", " ".join(parts)),
+            ("", "\n"),
+            ("class:field-description", f"{description}"),
         ])
 
-    message.append(("", "\n> "))
+    # Show default value if available
+    if default is not None:
+        message.extend([
+            ("", "\n"),
+            ("class:default-value", f"[default: {default}]"),
+        ])
+
+    # Add the final prompt marker
+    message.extend([
+        ("", "\n"),
+        ("class:prompt", "> "),
+    ])
+
     return FormattedText(message)

@@ -4,9 +4,23 @@ from __future__ import annotations
 
 from enum import Enum
 import types
-from typing import Any, Literal, Protocol, TypeGuard, TypeVar, Union, get_args, get_origin
+from typing import (
+    TYPE_CHECKING,
+    Any,
+    Literal,
+    Protocol,
+    TypeGuard,
+    TypeVar,
+    Union,
+    get_args,
+    get_origin,
+)
 
 from pydantic import BaseModel, conint, constr
+
+
+if TYPE_CHECKING:
+    from collections.abc import Iterable
 
 
 ModelType = type[BaseModel] | BaseModel
@@ -88,3 +102,21 @@ def is_tuple_type(typ: Any) -> bool:
 def is_enum_type(typ: Any) -> TypeGuard[type[Enum]]:
     """Check if a type is an Enum type."""
     return isinstance(typ, type) and issubclass(typ, Enum)
+
+
+def is_valid_sequence(value: Any) -> TypeGuard[Iterable[Any]]:
+    """Check if a value is a valid sequence.
+
+    Args:
+        value: Value to check
+
+    Returns:
+        True if value is a valid sequence (list, tuple, set)
+    """
+    if value is None:
+        return False
+    try:
+        iter(value)
+        return isinstance(value, list | tuple | set)
+    except TypeError:
+        return False
