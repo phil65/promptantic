@@ -5,6 +5,6 @@ from __future__ import annotations
 from promptantic.generator import ModelGenerator
 from promptantic.exceptions import PromptanticError
 
-__version__ = "0.4.1"
+__version__ = "0.4.2"
 
 __all__ = ["ModelGenerator", "PromptanticError"]
