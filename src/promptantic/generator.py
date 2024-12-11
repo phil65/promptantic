@@ -9,7 +9,7 @@ from enum import Enum
 import ipaddress
 from pathlib import Path
 import sys
-from typing import TYPE_CHECKING, Any, get_origin
+from typing import TYPE_CHECKING, Any, TypeVar, get_origin
 from uuid import UUID
 from zoneinfo import ZoneInfo
 
@@ -60,8 +60,11 @@ from promptantic.type_utils import (
 from promptantic.ui.style import DEFAULT_STYLE
 
 
+M = TypeVar("M", bound=BaseModel)
+
+
 if TYPE_CHECKING:
-    from promptantic.type_utils import ModelType, TypeHandler
+    from promptantic.type_utils import TypeHandler
 
 
 class ModelGenerator:
@@ -191,7 +194,7 @@ class ModelGenerator:
             raise NoHandlerError(msg)
         return handler
 
-    def populate(self, model: ModelType) -> BaseModel:
+    def populate(self, model: type[M] | M) -> M:
         """Populate a model instance through interactive prompts.
 
         This is a synchronous wrapper around the async populate method.
@@ -211,7 +214,7 @@ class ModelGenerator:
 
         return asyncio.run(self.apopulate(model))
 
-    async def apopulate(self, model: ModelType) -> BaseModel:
+    async def apopulate(self, model: type[M] | M) -> M:
         """Asynchronously populate a model instance.
 
         Args:
