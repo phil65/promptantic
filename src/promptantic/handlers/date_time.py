@@ -26,7 +26,7 @@ class DateHandler(BaseHandler):
         **options: Any,
     ) -> datetime.date:
         """Handle date input."""
-        session = PromptSession()
+        session: PromptSession[Any] = PromptSession()
         default_str = default.isoformat() if default else None
 
         while True:
@@ -70,7 +70,7 @@ class TimeHandler(BaseHandler):
         **options: Any,
     ) -> datetime.time:
         """Handle time input."""
-        session = PromptSession()
+        session: PromptSession[Any] = PromptSession()
         default_str = self.format_default(default)
 
         while True:
@@ -116,7 +116,7 @@ class DateTimeHandler(BaseHandler):
         **options: Any,
     ) -> datetime.datetime:
         """Handle datetime input."""
-        session = PromptSession()
+        session: PromptSession[Any] = PromptSession()
         default_str = self.format_default(default)
 
         while True:
@@ -167,7 +167,7 @@ class TimeDeltaHandler(BaseHandler):
         **options: Any,
     ) -> datetime.timedelta:
         """Handle timedelta input."""
-        session = PromptSession()
+        session: PromptSession[Any] = PromptSession()
         default_str = self.format_default(default)
 
         while True:

@@ -61,7 +61,7 @@ class ModelHandler(BaseHandler):
             print("2. Enter new values")
             print("3. Modify default values")
 
-            session = PromptSession()
+            session: PromptSession[Any] = PromptSession()
             while True:
                 choice = await session.prompt_async("Choose option (1-3): ")
                 if choice == "1":

@@ -73,7 +73,7 @@ class IntHandler(BaseHandler[int]):
         """Handle integer input."""
         while True:
             try:
-                session = PromptSession()
+                session: PromptSession[Any] = PromptSession()
                 default_str = self.format_default(default)
                 result = await session.prompt_async(
                     create_field_prompt(field_name, description, default=default_str),
@@ -111,7 +111,7 @@ class FloatHandler(BaseHandler[float]):
         """Handle float input."""
         while True:
             try:
-                session = PromptSession()
+                session: PromptSession[Any] = PromptSession()
                 default_str = self.format_default(default)
                 result = await session.prompt_async(
                     create_field_prompt(
@@ -155,7 +155,7 @@ class DecimalHandler(BaseHandler[Decimal]):
         """Handle decimal input."""
         while True:
             try:
-                session = PromptSession()
+                session: PromptSession[Any] = PromptSession()
                 default_str = self.format_default(default)
                 result = await session.prompt_async(
                     create_field_prompt(
@@ -196,7 +196,7 @@ class BoolHandler(BaseHandler[bool]):
             default_str = "y" if default else "n"
 
         while True:
-            session = PromptSession()
+            session: PromptSession[Any] = PromptSession()
             result = await session.prompt_async(
                 create_field_prompt(
                     field_name,

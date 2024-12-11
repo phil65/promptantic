@@ -47,7 +47,7 @@ class SequenceHandler(BaseHandler[tuple[Any, ...]]):
             print("2. Enter new values")
             print("3. Start with defaults and add more")
 
-            session = PromptSession()
+            session: PromptSession[Any] = PromptSession()
             while True:
                 choice = await session.prompt_async("Choose option (1-3): ")
                 if choice == "1":
@@ -266,7 +266,7 @@ class DictHandler(BaseHandler[dict[Any, Any]]):
             print("2. Enter new values")
             print("3. Start with defaults and add more")
 
-            session = PromptSession()
+            session: PromptSession[Any] = PromptSession()
             while True:
                 choice = await session.prompt_async("Choose option (1-3): ")
                 if choice == "1":

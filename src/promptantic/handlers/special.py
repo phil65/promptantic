@@ -32,7 +32,7 @@ class SecretStrHandler(BaseHandler):
         **options: Any,
     ) -> SecretStr:
         """Handle SecretStr input."""
-        session = PromptSession()
+        session: PromptSession[Any] = PromptSession()
 
         # Show placeholder for default if exists
         default_placeholder = "********" if default is not None else None
@@ -140,7 +140,7 @@ class UUIDHandler(BaseHandler):
         **options: Any,
     ) -> UUID:
         """Handle UUID input."""
-        session = PromptSession()
+        session: PromptSession[Any] = PromptSession()
         default_str = self.format_default(default)
 
         while True:
@@ -181,7 +181,7 @@ class EmailHandler(BaseHandler):
         **options: Any,
     ) -> str:
         """Handle email input."""
-        session = PromptSession()
+        session: PromptSession[Any] = PromptSession()
 
         # Safely get field extra info
         field_info = options.get("field_info")
@@ -238,7 +238,7 @@ class URLHandler(BaseHandler):
         **options: Any,
     ) -> str:
         """Handle URL input."""
-        session = PromptSession()
+        session: PromptSession[Any] = PromptSession()
 
         # Safely get field extra info
         field_info = options.get("field_info")
@@ -301,7 +301,7 @@ class ImportStringHandler(BaseHandler[str]):
             msg = "Invalid ImportString type"
             raise ValueError(msg)
 
-        session = PromptSession(completer=self.completer)
+        session: PromptSession[Any] = PromptSession(completer=self.completer)
 
         while True:
             result = await session.prompt_async(

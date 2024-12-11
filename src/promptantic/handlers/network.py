@@ -24,7 +24,7 @@ class IPv4Handler(BaseHandler):
         **options: Any,
     ) -> ipaddress.IPv4Address:
         """Handle IPv4 address input."""
-        session = PromptSession()
+        session: PromptSession[Any] = PromptSession()
         default_str = str(default) if default is not None else None
 
         while True:
@@ -69,7 +69,7 @@ class IPv6Handler(BaseHandler):
         **options: Any,
     ) -> ipaddress.IPv6Address:
         """Handle IPv6 address input."""
-        session = PromptSession()
+        session: PromptSession[Any] = PromptSession()
         default_str = self.format_default(default)
 
         while True:
@@ -107,7 +107,7 @@ class NetworkHandler(BaseHandler):
         **options: Any,
     ) -> ipaddress.IPv4Network | ipaddress.IPv6Network:
         """Handle IP network input."""
-        session = PromptSession()
+        session: PromptSession[Any] = PromptSession()
         default_str = str(default) if default is not None else None
 
         while True:

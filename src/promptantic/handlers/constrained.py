@@ -40,7 +40,7 @@ class ConstrainedStrHandler(BaseHandler):
         constraint_desc = " | ".join(constraints)
         full_desc = f"{description or ''}\nConstraints: {constraint_desc}"
 
-        session = PromptSession()
+        session: PromptSession[Any] = PromptSession()
         while True:
             result = await session.prompt_async(
                 create_field_prompt(field_name, full_desc, default=default),
@@ -124,7 +124,7 @@ class ConstrainedIntHandler(BaseHandler[int]):
             else description
         )
 
-        session = PromptSession()
+        session: PromptSession[Any] = PromptSession()
         default_str = self.format_default(default)
 
         while True:
