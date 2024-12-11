@@ -11,7 +11,7 @@ from promptantic.handlers.base import BaseHandler
 from promptantic.type_utils import get_union_types, is_model_type
 
 
-def get_type_display_name(typ: type[Any]) -> str:
+def get_type_display_name(typ: type[Any] | None) -> str:
     """Get a user-friendly display name for a type.
 
     Args:
@@ -20,16 +20,20 @@ def get_type_display_name(typ: type[Any]) -> str:
     Returns:
         A user-friendly name for the type
     """
+    if typ is None:
+        return "None"
     if is_model_type(typ):
         return typ.__name__  # type: ignore
-    return typ.__name__.lower()
+    return typ.__name__.lower() if hasattr(typ, "__name__") else str(typ)
 
 
 class UnionHandler(BaseHandler[Any]):
     """Handler for union types."""
 
-    def get_type_display_name(self, typ: type[Any]) -> str:
+    def get_type_display_name(self, typ: type[Any] | None) -> str:
         """Get user-friendly display name for a type."""
+        if typ is None:
+            return "None"
         if is_model_type(typ):
             return typ.__name__ if hasattr(typ, "__name__") else str(typ)
         if hasattr(typ, "__name__"):
@@ -52,6 +56,9 @@ class UnionHandler(BaseHandler[Any]):
         if default is not None:
             for typ in types:
                 try:
+                    if typ is None and default is None:
+                        default_type = None
+                        break
                     if isinstance(default, typ):
                         default_type = typ
                         break
@@ -62,7 +69,7 @@ class UnionHandler(BaseHandler[Any]):
         choices = [(typ, self.get_type_display_name(typ)) for typ in types]
 
         # If we have a default type, put it first
-        if default_type:
+        if default_type is not None:
             choices = [(default_type, self.get_type_display_name(default_type))] + [
                 (t, n) for t, n in choices if t != default_type
             ]
@@ -76,7 +83,7 @@ class UnionHandler(BaseHandler[Any]):
                 title=f"Select type for {field_name}",
                 text=description or "Choose the type to use:",
                 values=choices,
-                default=default_type if default_type else None,
+                default=default_type if default_type is not None else None,
             ).run_async()
         except KeyboardInterrupt:
             print("\nSelection cancelled with Ctrl+C")
@@ -85,6 +92,10 @@ class UnionHandler(BaseHandler[Any]):
         if selected_type is None:
             msg = "Type selection cancelled"
             raise ValidationError(msg)
+
+        # Special handling for None type
+        if selected_type is None:
+            return None
 
         # Get handler for selected type and use it
         handler = self.generator.get_handler(selected_type)
