@@ -78,8 +78,11 @@ class PathHandler(BaseHandler):
         """Handle Path input."""
         session = PromptSession(completer=self.completer)
         default_str = self.format_default(default)
+
+        # Safely get field extra info
         field_info = options.get("field_info")
-        field_extra = getattr(field_info, "json_schema_extra", {}) if field_info else {}
+        json_schema_extra = getattr(field_info, "json_schema_extra", None)
+        field_extra = json_schema_extra if json_schema_extra else {}
 
         while True:
             try:
@@ -178,8 +181,11 @@ class EmailHandler(BaseHandler):
     ) -> str:
         """Handle email input."""
         session = PromptSession()
+
+        # Safely get field extra info
         field_info = options.get("field_info")
-        field_extra = getattr(field_info, "json_schema_extra", {}) if field_info else {}
+        json_schema_extra = getattr(field_info, "json_schema_extra", None)
+        field_extra = json_schema_extra if json_schema_extra else {}
 
         # Get custom regex pattern if provided
         custom_pattern = field_extra.get("email_pattern")
@@ -232,8 +238,11 @@ class URLHandler(BaseHandler):
     ) -> str:
         """Handle URL input."""
         session = PromptSession()
+
+        # Safely get field extra info
         field_info = options.get("field_info")
-        field_extra = getattr(field_info, "json_schema_extra", {}) if field_info else {}
+        json_schema_extra = getattr(field_info, "json_schema_extra", None)
+        field_extra = json_schema_extra if json_schema_extra else {}
 
         # Get custom regex pattern if provided
         custom_pattern = field_extra.get("url_pattern")

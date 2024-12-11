@@ -25,13 +25,11 @@ class StrHandler(BaseHandler[str]):
         **options: Any,
     ) -> str:
         """Handle string input."""
+        # Get field info from options
         field_info = options.get("field_info")
         # Get completions from field info extra attributes
-        completions = (
-            getattr(field_info, "json_schema_extra", {}).get("completions")
-            if field_info
-            else None
-        )
+        json_schema_extra = getattr(field_info, "json_schema_extra", None)
+        completions = json_schema_extra.get("completions") if json_schema_extra else None
         completer = FieldCompleter(completions) if completions else None
 
         session = PromptSession(completer=completer)
