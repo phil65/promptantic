@@ -39,7 +39,7 @@ class SequenceHandler(BaseHandler[tuple[Any, ...]]):
         items: list[Any] = []
         index = 0
 
-        if default:
+        if default is not None and hasattr(default, "__iter__"):
             print(f"\nDefault values available for {field_name}:")
             print("1. Use default values")
             print("2. Enter new values")
@@ -107,11 +107,12 @@ class ListHandler(BaseHandler[list[Any]]):
         index = 0
 
         print(f"\nEntering items for {field_name}")
-        if default:
+        # Check if we have a valid default value
+        if default is not None and hasattr(default, "__iter__"):
             print(f"Default values: {default}")
             print("Press Enter to keep defaults or input new values")
-            items = default.copy()
-            index = len(default)
+            items = list(default)
+            index = len(items)
         print("Press Ctrl-D when done, Ctrl-C to remove last item")
 
         while True:
