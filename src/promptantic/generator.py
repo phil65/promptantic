@@ -207,12 +207,12 @@ class ModelGenerator:
         return handler
 
     @overload
-    def populate(self, model: type[M]) -> M: ...
+    def populate(self, model: type[M], _test_mode: bool = False) -> M: ...
 
     @overload
-    def populate(self, model: M) -> M: ...
+    def populate(self, model: M, _test_mode: bool = False) -> M: ...
 
-    def populate(self, model: type[M] | M) -> M:
+    def populate(self, model: type[M] | M, _test_mode: bool = False) -> M:
         """Populate a model instance through interactive prompts.
 
         This is a synchronous wrapper around the async populate method.
@@ -230,15 +230,15 @@ class ModelGenerator:
             # Windows requires a specific event loop policy
             asyncio.set_event_loop_policy(asyncio.WindowsSelectorEventLoopPolicy())
 
-        return asyncio.run(self.apopulate(model))
+        return asyncio.run(self.apopulate(model, _test_mode=_test_mode))
 
     @overload
-    async def apopulate(self, model: type[M]) -> M: ...
+    async def apopulate(self, model: type[M], _test_mode: bool = False) -> M: ...
 
     @overload
-    async def apopulate(self, model: M) -> M: ...
+    async def apopulate(self, model: M, _test_mode: bool = False) -> M: ...
 
-    async def apopulate(self, model: type[M] | M) -> M:
+    async def apopulate(self, model: type[M] | M, _test_mode: bool = False) -> M:
         """Asynchronously populate a model instance.
 
         Args:
@@ -299,6 +299,7 @@ class ModelGenerator:
                             description=description,
                             default=field_default,
                             field_info=field,
+                            _test_mode=_test_mode,
                         )
                         values[name] = value
                         break

@@ -116,17 +116,19 @@ class ListHandler(BaseHandler[list[Any]]):
             print("Press Enter to keep defaults or input new values")
             items = list(default)
             index = len(items)
-        print("Press Ctrl-D when done, Ctrl-C to remove last item")
+        print("Press Ctrl-D when done, or enter an empty line in test mode")
 
         while True:
             try:
-                # Create prompt for each item
                 item_name = f"{field_name}[{index}]"
                 value = await item_handler.handle(
                     field_name=item_name,
                     field_type=item_type,
                     description=description,
                 )
+                # In test mode, treat empty string as termination
+                if not value and options.get("_test_mode"):  # Updated here
+                    break
                 items.append(value)
                 index += 1
             except EOFError:

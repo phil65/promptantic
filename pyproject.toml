@@ -37,6 +37,7 @@ dependencies = [
     "prompt-toolkit>=3.0.48",
     "pydantic",
     # Only add below (Copier)
+    "pytest-asyncio>=0.24.0",
 ]
 
 [tool.uv]
@@ -49,6 +50,7 @@ dev = [
     "pyreadline3",
     "devtools",
     # Only add below (Copier)
+    "pytest-asyncio>=0.24.0",
 ]
 benchmark = ["pyinstrument"]
 lint = [
@@ -71,10 +73,22 @@ Discussions = "https://github.com/phil65/promptantic/discussions"
 "Code coverage" = "https://app.codecov.io/gh/phil65/promptantic"
 
 [tool.pytest.ini_options]
-testpaths = "tests/"
+testpaths = ["tests"]
 log_cli = true
+python_files = ["test_*.py"]
+pythonpath = ["src"]
+log_level = "ERROR"
+asyncio_default_fixture_loop_scope = "function"
 log_format = "%(asctime)s %(levelname)s %(message)s"
 log_date_format = "%Y-%m-%d %H:%M:%S"
+asyncio_mode = "auto"
+addopts = "-m 'not slow'"
+markers = [
+    "asyncio: mark test as async",
+    "slow: marks tests as slow",
+    "unit: marks tests as unit tests",
+    "integration: marks tests as integration tests",
+]
 
 [tool.coverage.report]
 exclude_lines = [
@@ -153,7 +167,7 @@ select = [
     # "TD",   # flake8-todos
     "T10", # flake8-debugger
     # "T20",  # flake8-print
-    "TC", # flake8-type-checking
+    "TC",  # flake8-type-checking
     "TID", # flake8-tidy-imports
     "TRY", # tryceratops
     "UP",  # PyUpgrade

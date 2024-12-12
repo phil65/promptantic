@@ -157,16 +157,16 @@ def is_skip_prompt(field: Any) -> bool:
     # Check direct field metadata
     from promptantic import SKIP_PROMPT_KEY
 
+    # Check direct field metadata
     json_schema_extra = getattr(field, "json_schema_extra", {})
-    if json_schema_extra.get(SKIP_PROMPT_KEY):
+    if json_schema_extra and json_schema_extra.get(SKIP_PROMPT_KEY):
         return True
 
-    # Check Annotated metadata
-    field_type = field.annotation
-    if get_origin(field_type) is Annotated:
-        args = get_args(field_type)
-        for arg in args[1:]:
-            if isinstance(arg, dict) and arg.get(SKIP_PROMPT_KEY):
+    # Check metadata array for Annotated fields
+    metadata = getattr(field, "metadata", [])
+    if isinstance(metadata, list):
+        for item in metadata:
+            if isinstance(item, dict) and item.get(SKIP_PROMPT_KEY):
                 return True
 
     return False

@@ -62,6 +62,12 @@ class StrHandler(BaseHandler[str]):
 class IntHandler(BaseHandler[int]):
     """Handler for integer input."""
 
+    def format_default(self, default: Any) -> str | None:
+        """Format default value."""
+        if default is None or default is PydanticUndefined:
+            return None
+        return str(default)
+
     async def handle(
         self,
         field_name: str,
@@ -77,11 +83,11 @@ class IntHandler(BaseHandler[int]):
                 default_str = self.format_default(default)
                 result = await session.prompt_async(
                     create_field_prompt(field_name, description, default=default_str),
-                    default=default_str if default_str is not None else "",
+                    default="",  # Always use empty string as default if no default value
                 )
 
                 # Handle empty input with default
-                if not result and default is not None:
+                if not result and default not in (None, PydanticUndefined):
                     return default
 
                 return int(result)

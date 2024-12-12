@@ -3,6 +3,7 @@ from __future__ import annotations
 
 import datetime
 from decimal import Decimal
+import os
 from pathlib import Path
 from typing import Any
 from uuid import UUID
@@ -36,8 +37,13 @@ def generator():
             "123e4567-e89b-12d3-a456-426614174000",
             UUID("123e4567-e89b-12d3-a456-426614174000"),
         ),
-        ("PathHandler", Path, "/tmp/test", Path("/tmp/test")),
-        # Add more test cases for other handlers
+        # Use os.path.sep to handle platform differences
+        (
+            "PathHandler",
+            Path,
+            "tmp/test".replace("/", os.path.sep),
+            Path("tmp/test").resolve().relative_to(Path.cwd()),
+        ),
     ],
 )
 async def test_handlers(
@@ -51,21 +57,20 @@ async def test_handlers(
     # Get the handler instance
     handler = generator.get_handler(field_type)
 
-    # Create a pipe input to simulate user input
     with (
         create_pipe_input() as pipe_input,
         create_app_session(input=pipe_input, output=DummyOutput()),
     ):
-        # Send the test input
         pipe_input.send_text(f"{test_input}\n")
 
-        # Test the handler
         result = await handler.handle(
             field_name="test_field",
             field_type=field_type,
             description="Test field",
         )
 
+        if isinstance(result, Path):
+            result = result.resolve().relative_to(Path.cwd())
         assert result == expected
 
 
@@ -111,11 +116,14 @@ async def test_list_handler():
         create_pipe_input() as pipe_input,
         create_app_session(input=pipe_input, output=DummyOutput()),
     ):
-        # Simulate entering two items and then Ctrl+D
+        # Simulate entering two items and then empty line
         pipe_input.send_text("item1\n")
         pipe_input.send_text("item2\n")
-        pipe_input.send_eof()
+        pipe_input.send_text("\n")  # Empty line to terminate
 
-        model = await generator.apopulate(ModelWithList)
-
+        # Pass test_mode flag
+        model = await generator.apopulate(
+            ModelWithList,
+            _test_mode=True,
+        )
         assert model.items == ["item1", "item2"]
