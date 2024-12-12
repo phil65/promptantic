@@ -4,7 +4,7 @@ from __future__ import annotations
 
 from pathlib import Path
 import re
-from typing import Any, get_args, get_origin
+from typing import Any, cast, get_args, get_origin
 from uuid import UUID
 
 from prompt_toolkit.shortcuts import PromptSession
@@ -330,3 +330,60 @@ class ImportStringHandler(BaseHandler[str]):
                 raise ValidationError(msg) from e
             else:
                 return result
+
+
+class PatternHandler(BaseHandler[re.Pattern[str]]):
+    """Handler for regular expression patterns."""
+
+    def format_default(self, default: Any) -> str | None:
+        """Format regex pattern default value."""
+        if default is None or default is PydanticUndefined:
+            return None
+        if isinstance(default, str):
+            return default
+        if isinstance(default, re.Pattern):
+            return default.pattern
+        return str(default)
+
+    async def handle(
+        self,
+        field_name: str,
+        field_type: type[re.Pattern[str]],
+        description: str | None = None,
+        default: re.Pattern[str] | str | None = None,
+        **options: Any,
+    ) -> re.Pattern[str]:
+        """Handle regex pattern input."""
+        session: PromptSession[Any] = PromptSession()
+        default_str = self.format_default(default)
+
+        # Get field options for flags
+        field_info = options.get("field_info")
+        json_schema_extra = getattr(field_info, "json_schema_extra", {})
+        flags = json_schema_extra.get("regex_flags", 0)
+
+        while True:
+            try:
+                result = await session.prompt_async(
+                    create_field_prompt(
+                        field_name,
+                        description or "Enter a regular expression pattern",
+                        default=default_str,
+                    ),
+                    default=default_str if default_str is not None else "",
+                )
+
+                # Handle empty input with default
+                if not result and default is not None:
+                    if isinstance(default, str):
+                        return re.compile(default, flags)
+                    return default
+
+                # Validate by attempting to compile
+                pattern = re.compile(result, flags)
+                # Pattern might be Any due to older Python type hints
+                return cast(re.Pattern[str], pattern)
+
+            except re.error as e:
+                msg = f"Invalid regular expression: {e}"
+                raise ValidationError(msg) from e

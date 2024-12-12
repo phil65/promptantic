@@ -8,6 +8,7 @@ from decimal import Decimal
 from enum import Enum
 import ipaddress
 from pathlib import Path
+import re
 import sys
 from typing import TYPE_CHECKING, Any, TypeVar, get_origin, overload
 from uuid import UUID
@@ -48,6 +49,7 @@ from promptantic.handlers.special import (
     EmailHandler,
     ImportStringHandler,
     PathHandler,
+    PatternHandler,
     SecretStrHandler,
     URLHandler,
     UUIDHandler,
@@ -109,6 +111,7 @@ class ModelGenerator:
         self.register_handler(bool, BoolHandler(self))
         self.register_handler(Decimal, DecimalHandler(self))
         self.register_handler(type(None), NoneHandler(self))  # Add this line
+        self.register_handler(re.Pattern, PatternHandler(self))
 
         # Sequence types
         self.register_handler(list, ListHandler(self))
