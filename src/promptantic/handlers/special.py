@@ -2,7 +2,8 @@
 
 from __future__ import annotations
 
-from pathlib import Path
+import os
+from pathlib import Path, PosixPath, WindowsPath
 import re
 from typing import Any, cast, get_args, get_origin
 from uuid import UUID
@@ -53,31 +54,61 @@ class SecretStrHandler(BaseHandler):
         return SecretStr(result)
 
 
-class PathHandler(BaseHandler):
-    """Handler for Path input."""
+class PathHandler(BaseHandler[os.PathLike[str]]):
+    """Handler for path-like objects."""
 
     def __init__(self, generator: Any) -> None:
         super().__init__(generator)
         self.completer = EnhancedPathCompleter()
+        # Cache available path classes
+        self._upath = None
+        try:
+            from upath import UPath
+
+            self._upath = UPath
+        except ImportError:
+            pass
+
+    def _get_path_class(
+        self, field_type: type[os.PathLike[str]]
+    ) -> type[os.PathLike[str]]:
+        """Get the appropriate path class based on the field type.
+
+        Args:
+            field_type: The requested path type
+
+        Returns:
+            The appropriate path class to use
+        """
+        if field_type is Path or field_type in (WindowsPath, PosixPath):
+            return Path
+        if self._upath is not None and field_type is self._upath:
+            return self._upath
+        # For generic PathLike, prefer UPath if available
+        if field_type is os.PathLike and self._upath is not None:
+            return self._upath
+        # Default to pathlib.Path
+        return Path
 
     def format_default(self, default: Any) -> str | None:
         """Format path default value."""
         if default is None or default is PydanticUndefined:
             return None
-        if isinstance(default, str | Path):
+        if isinstance(default, str | os.PathLike):
             return str(Path(default).expanduser())
         return str(default)
 
     async def handle(
         self,
         field_name: str,
-        field_type: type[Path],
+        field_type: type[os.PathLike[str]],
         description: str | None = None,
-        default: Path | str | None = None,
+        default: os.PathLike[str] | str | None = None,
         **options: Any,
-    ) -> Path:
-        """Handle Path input."""
-        session: PromptSession[Any] = PromptSession(completer=self.completer)
+    ) -> os.PathLike[str]:
+        """Handle path input."""
+        path_cls = self._get_path_class(field_type)
+        session = PromptSession(completer=self.completer)
         default_str = self.format_default(default)
 
         # Safely get field extra info
@@ -98,9 +129,9 @@ class PathHandler(BaseHandler):
 
                 # Handle empty input with default
                 if not result and default is not None:
-                    return Path(default).expanduser().resolve()
+                    return path_cls(default).expanduser()  # type: ignore
 
-                path = Path(result).expanduser().resolve()
+                path = path_cls(result).expanduser()  # type: ignore
 
                 # Optional: Add validation for existence/type
                 if field_extra.get("must_exist", False) and not path.exists():
