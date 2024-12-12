@@ -48,7 +48,7 @@ class StrHandler(BaseHandler[str]):
         completions = json_schema_extra.get("completions") if json_schema_extra else None
         completer = FieldCompleter(completions) if completions else None
 
-        session = PromptSession(completer=completer)
+        session: PromptSession[Any] = PromptSession(completer=completer)
         default_str = (
             None if default is PydanticUndefined else self.format_default(default)
         )

@@ -207,7 +207,7 @@ class TimezoneHandler(BaseHandler):
         **options: Any,
     ) -> ZoneInfo:
         """Handle timezone input."""
-        session = PromptSession(completer=self.completer)
+        session: PromptSession[Any] = PromptSession(completer=self.completer)
         default_str = str(default) if default is not None else None
 
         while True:

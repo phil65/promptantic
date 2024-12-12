@@ -77,7 +77,7 @@ class PathHandler(BaseHandler):
         **options: Any,
     ) -> Path:
         """Handle Path input."""
-        session = PromptSession(completer=self.completer)
+        session: PromptSession[Any] = PromptSession(completer=self.completer)
         default_str = self.format_default(default)
 
         # Safely get field extra info
