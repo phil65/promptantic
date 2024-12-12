@@ -143,3 +143,30 @@ def is_valid_sequence(value: Any) -> TypeGuard[Iterable[Any]]:
         return isinstance(value, list | tuple | set)
     except TypeError:
         return False
+
+
+def is_skip_prompt(field: Any) -> bool:
+    """Check if a field should be skipped during prompting.
+
+    Args:
+        field: The pydantic field to check
+
+    Returns:
+        True if the field should be skipped, False otherwise
+    """
+    # Check direct field metadata
+    from promptantic import SKIP_PROMPT_KEY
+
+    json_schema_extra = getattr(field, "json_schema_extra", {})
+    if json_schema_extra.get(SKIP_PROMPT_KEY):
+        return True
+
+    # Check Annotated metadata
+    field_type = field.annotation
+    if get_origin(field_type) is Annotated:
+        args = get_args(field_type)
+        for arg in args[1:]:
+            if isinstance(arg, dict) and arg.get(SKIP_PROMPT_KEY):
+                return True
+
+    return False

@@ -15,6 +15,7 @@ from zoneinfo import ZoneInfo
 
 from prompt_toolkit.styles import Style, merge_styles
 from pydantic import BaseModel, SecretStr, ValidationError
+from pydantic_core import PydanticUndefined
 
 from promptantic.exceptions import NoHandlerError
 from promptantic.handlers.constrained import ConstrainedIntHandler, ConstrainedStrHandler
@@ -59,6 +60,7 @@ from promptantic.type_utils import (
     is_import_string,
     is_literal_type,
     is_model_type,
+    is_skip_prompt,
     is_tuple_type,
     is_union_type,
     strip_annotated,
@@ -265,6 +267,15 @@ class ModelGenerator:
 
         try:
             for name, field in model_cls.model_fields.items():
+                # Skip fields marked with skip_prompt
+                if is_skip_prompt(field):
+                    # Use default if available
+                    if field.default not in (None, PydanticUndefined):
+                        values[name] = field.default
+                    # Use default_factory if available
+                    elif field.default_factory is not None:
+                        values[name] = field.default_factory()  # type: ignore
+                    continue
                 current += 1
                 if self.show_progress:
                     print(f"\nField {current}/{total}")
