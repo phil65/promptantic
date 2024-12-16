@@ -108,7 +108,7 @@ class PathHandler(BaseHandler[os.PathLike[str]]):
     ) -> os.PathLike[str]:
         """Handle path input."""
         path_cls = self._get_path_class(field_type)
-        session = PromptSession(completer=self.completer)
+        session: PromptSession[str] = PromptSession(completer=self.completer)
         default_str = self.format_default(default)
 
         # Safely get field extra info
