@@ -3,13 +3,16 @@
 from __future__ import annotations
 
 import asyncio
+from collections import Counter, defaultdict, deque
 import datetime
 from decimal import Decimal
 from enum import Enum
+from fractions import Fraction
 import ipaddress
 from pathlib import Path
 import re
 import sys
+import types
 from typing import TYPE_CHECKING, Any, TypeVar, get_origin, overload
 from uuid import UUID
 from zoneinfo import ZoneInfo
@@ -53,6 +56,13 @@ from promptantic.handlers.special import (
     SecretStrHandler,
     URLHandler,
     UUIDHandler,
+)
+from promptantic.handlers.stdlib import (
+    CounterHandler,
+    DefaultDictHandler,
+    DequeHandler,
+    FractionHandler,
+    ModuleHandler,
 )
 from promptantic.handlers.unions import UnionHandler
 from promptantic.type_utils import (
@@ -140,6 +150,13 @@ class ModelGenerator:
         # Enum handler
         self.register_handler(Enum, EnumHandler(self))
 
+        # Additional stdlib handlers
+        self.register_handler(Fraction, FractionHandler(self))
+        self.register_handler(types.ModuleType, ModuleHandler(self))
+        self.register_handler(Counter, CounterHandler(self))
+        self.register_handler(deque, DequeHandler(self))
+        self.register_handler(defaultdict, DefaultDictHandler(self))
+
         # Note: Union handler is special and handled in get_handler
         self._email_handler = EmailHandler(self)
         self._url_handler = URLHandler(self)
@@ -154,7 +171,8 @@ class ModelGenerator:
             typ: The type to handle
             handler: The handler instance
         """
-        self._handlers[typ] = handler
+        # Inject new handlers at beginning to allow extending / overriding our base set
+        self._handlers = {typ: handler} | self._handlers
 
     def get_handler(self, typ: type[Any] | None, field_info: Any = None) -> TypeHandler:  # noqa: PLR0911
         """Get a handler for the given type."""
