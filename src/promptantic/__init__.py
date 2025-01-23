@@ -12,4 +12,10 @@ __version__ = "0.5.0"
 SKIP_PROMPT_KEY = "skip_prompt"
 SkipPromptType = bool | Literal["always"]
 
+import warnings
+
+warnings.filterwarnings(
+    "ignore", message="Valid config keys have changed in V2:*", category=UserWarning
+)
+
 __all__ = ["SKIP_PROMPT_KEY", "ModelGenerator", "PromptanticError"]
