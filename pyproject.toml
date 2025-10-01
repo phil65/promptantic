@@ -39,6 +39,7 @@ dependencies = [
     "pydantic",
     "schemez",
     # Only add below (Copier)
+    "universal-pathlib>=0.3.0",
 ]
 
 [tool.uv]

@@ -5,21 +5,18 @@ from __future__ import annotations
 import os
 from pathlib import Path, PosixPath, WindowsPath
 import re
-from typing import TYPE_CHECKING, Any, cast, get_args, get_origin
+from typing import Any, cast, get_args, get_origin
 from uuid import UUID
 
 from prompt_toolkit.shortcuts import PromptSession
 from pydantic import SecretStr
 from pydantic_core import PydanticUndefined
+from upath import UPath
 
 from promptantic.completers import EnhancedPathCompleter, ImportStringCompleter
 from promptantic.exceptions import ValidationError
 from promptantic.handlers.base import BaseHandler
 from promptantic.ui.formatting import create_field_prompt
-
-
-if TYPE_CHECKING:
-    from upath import UPath
 
 
 MSG = "Enter a Python import path (e.g. 'package.module' or 'package.module:Class')"
@@ -64,16 +61,9 @@ class PathHandler(BaseHandler[os.PathLike[str]]):
     def __init__(self, generator: Any) -> None:
         super().__init__(generator)
         self.completer = EnhancedPathCompleter()
-        # Cache available path classes
-        self._upath = None
-        try:
-            from upath import UPath
 
-            self._upath = UPath
-        except ImportError:
-            pass
-
-    def _get_path_class(self, field_type: type[os.PathLike[str]]) -> type[Path | UPath]:
+    @staticmethod
+    def _get_path_class(field_type: type[os.PathLike[str]]) -> type[Path | UPath]:
         """Get the appropriate path class based on the field type.
 
         Args:
@@ -84,12 +74,8 @@ class PathHandler(BaseHandler[os.PathLike[str]]):
         """
         if field_type is Path or field_type in (WindowsPath, PosixPath):
             return Path
-        if self._upath is not None and field_type is self._upath:
-            return self._upath
-        # For generic PathLike, prefer UPath if available
-        if field_type is os.PathLike and self._upath is not None:
-            return self._upath
-        # Default to pathlib.Path
+        if field_type is UPath or field_type is os.PathLike:
+            return UPath
         return Path
 
     def format_default(self, default: Any) -> str | None:
