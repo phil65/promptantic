@@ -7,7 +7,7 @@ from typing import Literal
 from promptantic.generator import ModelGenerator
 from promptantic.exceptions import PromptanticError
 
-__version__ = "0.5.1"
+__version__ = "0.5.2"
 
 SKIP_PROMPT_KEY = "skip_prompt"
 SkipPromptType = bool | Literal["always"]
