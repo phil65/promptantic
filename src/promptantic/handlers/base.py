@@ -2,7 +2,7 @@
 
 from __future__ import annotations
 
-from typing import Any, Generic, TypeVar
+from typing import Any, TypeVar
 
 from promptantic.type_utils import TypeHandler
 
@@ -10,7 +10,7 @@ from promptantic.type_utils import TypeHandler
 T = TypeVar("T")
 
 
-class BaseHandler(Generic[T], TypeHandler[T]):
+class BaseHandler[T](TypeHandler[T]):
     """Base class for type handlers."""
 
     def __init__(self, generator: Any) -> None:  # Any for now to avoid circular import
