@@ -4,8 +4,6 @@ An interactive CLI tool for populating Pydantic models using prompt-toolkit.
 
 [![PyPI License](https://img.shields.io/pypi/l/promptantic.svg)](https://pypi.org/project/promptantic/)
 [![Package status](https://img.shields.io/pypi/status/promptantic.svg)](https://pypi.org/project/promptantic/)
-[![Daily downloads](https://img.shields.io/pypi/dd/promptantic.svg)](https://pypi.org/project/promptantic/)
-[![Weekly downloads](https://img.shields.io/pypi/dw/promptantic.svg)](https://pypi.org/project/promptantic/)
 [![Monthly downloads](https://img.shields.io/pypi/dm/promptantic.svg)](https://pypi.org/project/promptantic/)
 [![Distribution format](https://img.shields.io/pypi/format/promptantic.svg)](https://pypi.org/project/promptantic/)
 [![Wheel availability](https://img.shields.io/pypi/wheel/promptantic.svg)](https://pypi.org/project/promptantic/)
@@ -23,11 +21,8 @@ An interactive CLI tool for populating Pydantic models using prompt-toolkit.
 [![Github last commit](https://img.shields.io/github/last-commit/phil65/promptantic)](https://github.com/phil65/promptantic/commits)
 [![Github release date](https://img.shields.io/github/release-date/phil65/promptantic)](https://github.com/phil65/promptantic/releases)
 [![Github language count](https://img.shields.io/github/languages/count/phil65/promptantic)](https://github.com/phil65/promptantic)
-[![Github commits this week](https://img.shields.io/github/commit-activity/w/phil65/promptantic)](https://github.com/phil65/promptantic)
 [![Github commits this month](https://img.shields.io/github/commit-activity/m/phil65/promptantic)](https://github.com/phil65/promptantic)
-[![Github commits this year](https://img.shields.io/github/commit-activity/y/phil65/promptantic)](https://github.com/phil65/promptantic)
 [![Package status](https://codecov.io/gh/phil65/promptantic/branch/main/graph/badge.svg)](https://codecov.io/gh/phil65/promptantic/)
-[![Code style: black](https://img.shields.io/badge/code%20style-black-000000.svg)](https://github.com/psf/black)
 [![PyUp](https://pyup.io/repos/github/phil65/promptantic/shield.svg)](https://pyup.io/repos/github/phil65/promptantic/)
 
 [Read the documentation!](https://phil65.github.io/promptantic/)
