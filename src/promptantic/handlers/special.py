@@ -5,7 +5,7 @@ from __future__ import annotations
 import os
 from pathlib import Path, PosixPath, WindowsPath
 import re
-from typing import Any, cast, get_args, get_origin
+from typing import TYPE_CHECKING, Any, cast, get_args, get_origin
 from uuid import UUID
 
 from prompt_toolkit.shortcuts import PromptSession
@@ -16,6 +16,10 @@ from promptantic.completers import EnhancedPathCompleter, ImportStringCompleter
 from promptantic.exceptions import ValidationError
 from promptantic.handlers.base import BaseHandler
 from promptantic.ui.formatting import create_field_prompt
+
+
+if TYPE_CHECKING:
+    from upath import UPath
 
 
 MSG = "Enter a Python import path (e.g. 'package.module' or 'package.module:Class')"
@@ -69,9 +73,7 @@ class PathHandler(BaseHandler[os.PathLike[str]]):
         except ImportError:
             pass
 
-    def _get_path_class(
-        self, field_type: type[os.PathLike[str]]
-    ) -> type[os.PathLike[str]]:
+    def _get_path_class(self, field_type: type[os.PathLike[str]]) -> type[Path | UPath]:
         """Get the appropriate path class based on the field type.
 
         Args:
@@ -98,14 +100,16 @@ class PathHandler(BaseHandler[os.PathLike[str]]):
             return str(Path(default).expanduser())
         return str(default)
 
-    async def handle(
+    # TODO: added the ignore for a quick fix, this is related to UPath changes
+    # (not os.pathLike anymore)
+    async def handle(  # type: ignore[override]
         self,
         field_name: str,
         field_type: type[os.PathLike[str]],
         description: str | None = None,
         default: os.PathLike[str] | str | None = None,
         **options: Any,
-    ) -> os.PathLike[str]:
+    ) -> Path | UPath:
         """Handle path input."""
         path_cls = self._get_path_class(field_type)
         session: PromptSession[str] = PromptSession(completer=self.completer)

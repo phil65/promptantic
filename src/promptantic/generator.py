@@ -17,7 +17,7 @@ from typing import TYPE_CHECKING, Any, TypeVar, get_origin, overload
 from uuid import UUID
 from zoneinfo import ZoneInfo
 
-from prompt_toolkit.styles import Style, merge_styles
+from prompt_toolkit.styles import merge_styles
 from pydantic import BaseModel, SecretStr, ValidationError
 from pydantic_core import PydanticUndefined
 
@@ -84,6 +84,8 @@ M = TypeVar("M", bound=BaseModel)
 
 
 if TYPE_CHECKING:
+    from prompt_toolkit.styles import Style
+
     from promptantic.type_utils import TypeHandler
 
 

@@ -8,12 +8,13 @@ import sys
 from typing import TYPE_CHECKING
 from zoneinfo import available_timezones
 
-from prompt_toolkit.completion import CompleteEvent, Completer, Completion, PathCompleter
+from prompt_toolkit.completion import Completer, Completion, PathCompleter
 
 
 if TYPE_CHECKING:
     from collections.abc import Iterable
 
+    from prompt_toolkit.completion import CompleteEvent
     from prompt_toolkit.document import Document
 
 
