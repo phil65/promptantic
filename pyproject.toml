@@ -37,7 +37,6 @@ dependencies = [
     "prompt-toolkit>=3.0.48",
     "pydantic",
     # Only add below (Copier)
-    "pytest-asyncio>=0.24.0",
 ]
 
 [tool.uv]
