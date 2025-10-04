@@ -6,6 +6,7 @@ from typing import Literal
 
 from promptantic.generator import ModelGenerator
 from promptantic.exceptions import PromptanticError
+from promptantic.creator import ModelCreator
 
 __version__ = "0.5.2"
 
@@ -19,3 +20,4 @@ warnings.filterwarnings(
 )
 
 __all__ = ["SKIP_PROMPT_KEY", "ModelGenerator", "PromptanticError"]
+__all__ = ["SKIP_PROMPT_KEY", "ModelCreator", "ModelGenerator", "PromptanticError"]
