@@ -22,7 +22,6 @@ def generator():
     return ModelGenerator()
 
 
-@pytest.mark.asyncio
 @pytest.mark.parametrize(
     ("handler_class", "field_type", "test_input", "expected"),
     [
@@ -74,7 +73,6 @@ async def test_handlers(
         assert result == expected
 
 
-@pytest.mark.asyncio
 async def test_model_with_skipped_fields():
     """Test model generation with skipped fields."""
 
@@ -103,7 +101,6 @@ async def test_model_with_skipped_fields():
 
 
 # Optional: Test complex types separately
-@pytest.mark.asyncio
 async def test_list_handler():
     """Test list handler with multiple inputs."""
 
