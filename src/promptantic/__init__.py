@@ -1,4 +1,7 @@
-"""Promptantic: Generate pydantic models using prompts"""
+"""Promptantic: main package.
+
+Generate pydantic models using prompts.
+"""
 
 from __future__ import annotations
 
@@ -6,7 +9,7 @@ from importlib.metadata import version
 
 __version__ = version("promptantic")
 __title__ = "Promptantic"
-__description__ = "Generate pydantic models using prompts"
+
 __author__ = "Philipp Temminghoff"
 
 from typing import Literal
