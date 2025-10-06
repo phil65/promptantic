@@ -2,12 +2,9 @@
 
 from __future__ import annotations
 
-from typing import Any, TypeVar
+from typing import Any
 
 from promptantic.type_utils import TypeHandler
-
-
-T = TypeVar("T")
 
 
 class BaseHandler[T](TypeHandler[T]):
