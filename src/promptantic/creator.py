@@ -3,7 +3,7 @@
 from __future__ import annotations
 
 import importlib
-from typing import TYPE_CHECKING, Annotated, Any, TypeVar, cast, get_args, get_origin
+from typing import TYPE_CHECKING, Annotated, Any, cast, get_args, get_origin
 import uuid
 
 from prompt_toolkit.shortcuts import PromptSession, radiolist_dialog
@@ -15,8 +15,6 @@ from promptantic.completers import ImportStringCompleter
 if TYPE_CHECKING:
     from promptantic.generator import ModelGenerator
 
-
-M = TypeVar("M", bound=BaseModel)
 
 # Update type definitions to be more precise
 FieldType = type[Any] | str | Annotated[Any, Any]
