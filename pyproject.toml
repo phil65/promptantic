@@ -1,6 +1,6 @@
 [project]
 name = "promptantic"
-version = "0.6.1"
+version = "1.0.0"
 description = "Generate pydantic models using prompts"
 readme = "README.md"
 requires-python = ">=3.13"
