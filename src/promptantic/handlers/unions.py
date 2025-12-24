@@ -3,8 +3,7 @@
 from __future__ import annotations
 
 from typing import Any
-
-from prompt_toolkit.shortcuts import radiolist_dialog
+from prompt_toolkit.shortcuts import radiolist_dialog, create_confirm_session
 from pydantic.fields import PydanticUndefined
 
 from promptantic.exceptions import ValidationError
@@ -70,35 +69,45 @@ class UnionHandler(BaseHandler[Any]):
 
         # Create choices for type selection
         choices = [(typ, self.get_type_display_name(typ)) for typ in types]
-
+        input_type = None
         # If we have a default type, put it first
         if default_type is not None:
             choices = [(default_type, self.get_type_display_name(default_type))] + [
                 (t, n) for t, n in choices if t != default_type
             ]
+        elif len(choices) == 2:  # if default is None
+            # Put None type first
+            for _t, _n in choices:
+                if _t is not None:
+                    input_type = _t
+                    break
+            result = await create_confirm_session(f"Default value for {field_name} is None. Use None as default?").prompt_async(
+                default="y"
+            )
+            if result:
+                return None
 
-        print("\nSelect type to use:")
-        print("Use arrow keys to select, Enter to confirm.")
-        print("Press Esc, q, or Ctrl+C to cancel.\n")
+        if input_type is None:
+            print("\nSelect type to use:")
+            print("Use arrow keys to select, Enter to confirm.")
+            print("Press Esc, q, or Ctrl+C to cancel.\n")
 
-        try:
-            selected_type = await radiolist_dialog(
-                title=f"Select type for {field_name}",
-                text=description or "Choose the type to use:",
-                values=choices,
-                default=default_type if default_type is not None else None,
-            ).run_async()
-        except KeyboardInterrupt:
-            print("\nSelection cancelled with Ctrl+C")
-            raise
+            try:
+                selected_type = await radiolist_dialog(
+                    title=f"Select type for {field_name}",
+                    text=description or "Choose the type to use:",
+                    values=choices,
+                    default=default_type if default_type is not None else None,
+                ).run_async()
+            except KeyboardInterrupt:
+                print("\nSelection cancelled with Ctrl+C")
+                raise
 
-        if selected_type is None:
-            msg = "Type selection cancelled"
-            raise ValidationError(msg)
-
-        # Special handling for None type
-        if selected_type is None:
-            return None
+            if selected_type is None:
+                msg = "Type selection cancelled"
+                raise ValidationError(msg)
+        else:
+            selected_type = input_type
 
         # Get handler for selected type and use it
         handler = self.generator.get_handler(selected_type)

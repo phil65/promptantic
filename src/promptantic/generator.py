@@ -13,15 +13,15 @@ from pathlib import Path
 import re
 import sys
 import types
-from typing import TYPE_CHECKING, Any, TypeVar, get_origin, overload
+from typing import TYPE_CHECKING, Annotated, Any, TypeVar, get_origin, overload
 from uuid import UUID
 from zoneinfo import ZoneInfo
 
 from prompt_toolkit.styles import merge_styles
-from pydantic import BaseModel, SecretStr, ValidationError
+from pydantic import BaseModel, SecretStr, TypeAdapter, ValidationError
 from pydantic_core import PydanticUndefined
 
-from promptantic.exceptions import NoHandlerError
+from promptantic.exceptions import NoHandlerError, ValidationError as PromptanticValidationError
 from promptantic.handlers.constrained import ConstrainedIntHandler, ConstrainedStrHandler
 from promptantic.handlers.date_time import (
     DateHandler,
@@ -33,7 +33,15 @@ from promptantic.handlers.date_time import (
 from promptantic.handlers.enums import EnumHandler
 from promptantic.handlers.literal import LiteralHandler
 from promptantic.handlers.models import ModelHandler
-from promptantic.handlers.network import IPv4Handler, IPv6Handler, NetworkHandler
+from promptantic.handlers.network import (
+    IPv4Handler,
+    IPv6Handler,
+    NetworkHandler,
+    UrlHandler,
+    DsnHandler,
+    URL_TYPES,
+    DSN_TYPES,
+)
 from promptantic.handlers.primitives import (
     BoolHandler,
     DecimalHandler,
@@ -81,6 +89,28 @@ from promptantic.ui.style import DEFAULT_STYLE
 
 
 M = TypeVar("M", bound=BaseModel)
+
+
+def validate_field(model_cls: type[BaseModel], field_name: str, value: Any) -> Any:
+    """Validate a single field value against model field constraints.
+
+    Args:
+        model_cls: The Pydantic model class.
+        field_name: The name of the field to validate.
+        value: The value to validate.
+
+    Returns:
+        The validated (and possibly coerced) value.
+
+    Raises:
+        ValidationError: If the value fails validation.
+    """
+    field_info = model_cls.model_fields[field_name]
+    field_type = field_info.annotation
+    # Reconstruct full type with metadata (Field constraints, Annotated validators, etc.)
+    if field_info.metadata:
+        field_type = Annotated[(field_type, *field_info.metadata)]
+    return TypeAdapter(field_type).validate_python(value)
 
 
 if TYPE_CHECKING:
@@ -142,6 +172,14 @@ class ModelGenerator:
         self.register_handler(ipaddress.IPv6Address, IPv6Handler(self))
         self.register_handler(ipaddress.IPv4Network, NetworkHandler(self))
         self.register_handler(ipaddress.IPv6Network, NetworkHandler(self))
+
+        # Pydantic URL types (AnyUrl, HttpUrl, etc.)
+        for url_type in URL_TYPES:
+            self.register_handler(url_type, UrlHandler(self, url_type))
+
+        # Pydantic DSN types (PostgresDsn, MySQLDsn, etc.)
+        for dsn_type in DSN_TYPES:
+            self.register_handler(dsn_type, DsnHandler(self, dsn_type))
 
         # DateTime types
         self.register_handler(datetime.date, DateHandler(self))
@@ -290,14 +328,14 @@ class ModelGenerator:
 
         try:
             for name, field in model_cls.model_fields.items():
+                # Get default value
+                field_default = field.get_default(call_default_factory=True, validated_data=values)
+                if field_default in (PydanticUndefined, Ellipsis):
+                    field_default = None
                 # Skip fields marked with skip_prompt
                 if is_skip_prompt(field):
-                    # Use default if available
-                    if field.default not in (None, PydanticUndefined):
-                        values[name] = field.default
-                    # Use default_factory if available
-                    elif field.default_factory is not None:
-                        values[name] = field.default_factory()  # type: ignore
+                    if field_default is not None:
+                        values[name] = field_default
                     continue
                 current += 1
                 if self.show_progress:
@@ -312,7 +350,7 @@ class ModelGenerator:
                 description = field.description
 
                 # Use instance value as default if it was set, otherwise use field default
-                field_default = defaults.get(name, field.default)
+                field_default = defaults.get(name, field_default)
 
                 while True:
                     try:
@@ -324,9 +362,11 @@ class ModelGenerator:
                             field_info=field,
                             _test_mode=_test_mode,
                         )
+                        # Validate field value against model constraints
+                        value = validate_field(model_cls, name, value)
                         values[name] = value
                         break
-                    except ValidationError as e:
+                    except (ValidationError, PromptanticValidationError) as e:
                         if not self.retry_on_validation_error:
                             raise
                         print(f"\033[91mValidation error: {e!s}\033[0m")
