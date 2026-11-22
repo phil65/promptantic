@@ -104,7 +104,7 @@ class ModelGenerator:
         Args:
             style: Optional custom style to use
             show_progress: Whether to show progress indication
-            allow_back: Whether to allow going back to previous fields
+            allow_back: Whether to allow going back to previous fields (currently unused)
             retry_on_validation_error: Whether to retry when validation fails
         """
         self.style = merge_styles([DEFAULT_STYLE, style]) if style else DEFAULT_STYLE
@@ -177,7 +177,18 @@ class ModelGenerator:
         self._handlers = {typ: handler} | self._handlers
 
     def get_handler(self, typ: type[Any] | None, field_info: Any = None) -> TypeHandler:  # noqa: PLR0911
-        """Get a handler for the given type."""
+        """Get a handler for the given type.
+
+        Args:
+            typ: The field type (``Annotated`` wrappers are stripped)
+            field_info: Optional pydantic ``FieldInfo`` of the field
+
+        Returns:
+            The handler responsible for the type
+
+        Raises:
+            NoHandlerError: If no handler is registered for the type
+        """
         typ = strip_annotated(typ)
 
         if typ is type(None):

@@ -59,7 +59,18 @@ class ModelCreator:
         model_name: str | None = None,
         base_classes: tuple[type[BaseModel], ...] = (BaseModel,),
     ) -> type[BaseModel]:
-        """Create a new Pydantic model interactively."""
+        """Create a new Pydantic model class interactively.
+
+        Prompts for field names, types and metadata until Ctrl-D (or a cancelled
+        type dialog) ends the field definition.
+
+        Args:
+            model_name: Name of the model. Prompted for if not given.
+            base_classes: Base classes for the new model.
+
+        Returns:
+            The newly created model class.
+        """
         if model_name is None:
             model_name = await self._prompt_model_name()
 
@@ -105,8 +116,11 @@ class ModelCreator:
         Args:
             model_name: Optional name for the model
             base_classes: Base classes for the model
-            populator: ModelPopulator instance for populating the model.
+            populator: ModelGenerator used to populate the model.
                 If not provided, a new one will be created.
+
+        Returns:
+            An instance of the newly created model.
         """
         model_cls = await self.acreate(model_name, base_classes)
 
