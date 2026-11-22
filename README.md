@@ -1,6 +1,8 @@
 # Promptantic
 
-An interactive CLI tool for populating Pydantic models using prompt-toolkit.
+Fill Pydantic models interactively in the terminal. promptantic walks a model's fields and
+shows a type-aware [prompt-toolkit](https://github.com/prompt-toolkit/python-prompt-toolkit)
+prompt for each one, with completion, validation and retry.
 
 [![PyPI License](https://img.shields.io/pypi/l/promptantic.svg)](https://pypi.org/project/promptantic/)
 [![Package status](https://img.shields.io/pypi/status/promptantic.svg)](https://pypi.org/project/promptantic/)
@@ -23,22 +25,20 @@ An interactive CLI tool for populating Pydantic models using prompt-toolkit.
 [![Github language count](https://img.shields.io/github/languages/count/phil65/promptantic)](https://github.com/phil65/promptantic)
 [![Github commits this month](https://img.shields.io/github/commit-activity/m/phil65/promptantic)](https://github.com/phil65/promptantic)
 [![Package status](https://codecov.io/gh/phil65/promptantic/branch/main/graph/badge.svg)](https://codecov.io/gh/phil65/promptantic/)
-[![PyUp](https://pyup.io/repos/github/phil65/promptantic/shield.svg)](https://pyup.io/repos/github/phil65/promptantic/)
 
 [Read the documentation!](https://phil65.github.io/promptantic/)
 
-
 ## Features
 
-- Interactive prompts for populating Pydantic models
-- Rich formatting and syntax highlighting
-- Type-aware input with validation
-- Autocompletion for paths, timezones, and custom values
-- Support for all common Python and Pydantic types
-- Nested model support
-- Union type handling via selection dialogs
-- Sequence input (lists, sets, tuples)
+- One prompt per field, driven by the field's type, description and default
+- Validation with retry on invalid input
+- Autocompletion for paths, timezones, import strings and custom value lists
+- Nested models, sequences and mappings
+- Union types via a selection dialog
+- Fields can be skipped (`skip_prompt`) and use their default
+- Extensible: register your own handler for any type
 - Customizable styling
+- `ModelCreator`: define a new model class interactively
 
 ## Installation
 
@@ -50,6 +50,7 @@ pip install promptantic
 
 ```python
 from pydantic import BaseModel, Field
+
 from promptantic import ModelGenerator
 
 
@@ -59,58 +60,79 @@ class Person(BaseModel):
     email: str = Field(description="Email address", pattern=r"[^@]+@[^@]+\.[^@]+")
 
 
-# Create and use the generator
 generator = ModelGenerator()
-person = await generator.apopulate(Person)
+person = generator.populate(Person)  # or: await generator.apopulate(Person)
 print(person)
 ```
+
+`populate` / `apopulate` accept a model class or an instance; values that were explicitly set
+on an instance are offered as defaults.
 
 ## Supported Types
 
 ### Basic Types
-- `str`, `int`, `float`, `bool`, `decimal.Decimal`
+- `str`, `int`, `float`, `bool`, `decimal.Decimal`, `fractions.Fraction`, `None`
 - Constrained types (e.g., `constr`, `conint`)
 - `Enum` classes
 - `Literal` types
 
 ### Complex Types
-- `list`, `set`, `tuple` (with nested type support)
-- `Union` types (with interactive type selection)
+- `list`, `set`, `tuple`, `dict` (with nested type support)
+- `collections.Counter`, `deque`, `defaultdict`
+- Union types (with interactive type selection)
 - Nested Pydantic models
 
 ### Special Types
-- `Path` (with path autocompletion)
+- `pathlib.Path` (with path autocompletion)
 - `UUID`
 - `SecretStr` (masked input)
 - `datetime`, `date`, `time`, `timedelta`
 - `ZoneInfo` (with timezone autocompletion)
 - `IPv4Address`, `IPv6Address`, `IPv4Network`, `IPv6Network`
-- Email addresses (with validation)
-- URLs (with validation)
+- `re.Pattern`
+- `pydantic.ImportString` and `types.ModuleType` (with import path autocompletion)
 
 ## Advanced Usage
 
-### Custom Completions
+### Field options
+
+Per-field behaviour is configured via `json_schema_extra`:
 
 ```python
-from pydantic import BaseModel, Field
 from pathlib import Path
+
+from pydantic import BaseModel, Field
+
+from promptantic import SKIP_PROMPT_KEY
 
 
 class Config(BaseModel):
     environment: str = Field(
-        description="Select environment", completions=["development", "staging", "production"]
+        description="Select environment",
+        json_schema_extra={"completions": ["development", "staging", "production"]},
     )
-    config_path: Path = Field(description="Path to config file")  # Has path completion
+    config_path: Path = Field(
+        description="Path to config file",
+        json_schema_extra={"must_exist": True, "file_only": True},
+    )
+    internal_id: str = Field(default="auto", json_schema_extra={SKIP_PROMPT_KEY: True})
 ```
+
+- `completions`: completion values for `str` fields
+- `must_exist`, `file_only`, `dir_only`: path validation
+- `skip_prompt` (`SKIP_PROMPT_KEY`): don't prompt, use the default / default factory
 
 ### Nested Models
 
 ```python
+from pydantic import BaseModel, Field
+
+from promptantic import ModelGenerator
+
+
 class Address(BaseModel):
     street: str = Field(description="Street name")
     city: str = Field(description="City name")
-    country: str = Field(description="Country name")
 
 
 class Person(BaseModel):
@@ -118,13 +140,18 @@ class Person(BaseModel):
     address: Address = Field(description="Person's address")
 
 
-# Will prompt for all fields recursively
-person = await ModelGenerator().apopulate(Person)
+# Prompts for all fields recursively
+person = ModelGenerator().populate(Person)
 ```
 
 ### Union Types
 
 ```python
+from pydantic import BaseModel
+
+from promptantic import ModelGenerator
+
+
 class Student(BaseModel):
     student_id: int
 
@@ -136,36 +163,79 @@ class Teacher(BaseModel):
 
 class Person(BaseModel):
     name: str
-    role: Student | Teacher  # Will show selection dialog
+    role: Student | Teacher  # Shows a selection dialog
 
 
-# Will prompt for type selection before filling fields
-person = await ModelGenerator().apopulate(Person)
+person = ModelGenerator().populate(Person)
 ```
 
-### Styling
+### Styling and options
 
 ```python
 from prompt_toolkit.styles import Style
+
 from promptantic import ModelGenerator
 
+
 custom_style = Style.from_dict({
-    "field-name": "bold #00aa00",  # Green bold
-    "field-description": "italic #888888",  # Gray italic
-    "error": "bold #ff0000",  # Red bold
+    "field-name": "bold #00aa00",
+    "field-description": "italic #888888",
+    "default-value": "#666666",
+    "error": "bold #ff0000",
 })
 
-generator = ModelGenerator(style=custom_style)
+generator = ModelGenerator(
+    style=custom_style,  # merged with the default style
+    show_progress=True,  # print "Field i/n" before each field
+    retry_on_validation_error=True,  # ask again instead of raising
+)
 ```
 
-### Options
+### Custom type handlers
 
 ```python
-generator = ModelGenerator(
-    show_progress=True,  # Show field progress
-    allow_back=True,  # Allow going back to previous fields
-    retry_on_validation_error=True,  # Retry on validation errors
-)
+from typing import Any
+
+from prompt_toolkit import PromptSession
+
+from promptantic import ModelGenerator
+from promptantic.handlers.base import BaseHandler
+
+
+class Point:
+    def __init__(self, x: float, y: float) -> None:
+        self.x, self.y = x, y
+
+
+class PointHandler(BaseHandler[Point]):
+    async def handle(
+        self,
+        field_name: str,
+        field_type: type[Point],
+        description: str | None = None,
+        default: Any = None,
+        **options: Any,
+    ) -> Point:
+        text = await PromptSession().prompt_async(f"{field_name} (x,y): ")
+        x, y = text.split(",")
+        return Point(float(x), float(y))
+
+
+generator = ModelGenerator()
+generator.register_handler(Point, PointHandler(generator))
+```
+
+### Creating models interactively
+
+```python
+import asyncio
+
+from promptantic import ModelCreator
+
+
+# Prompts for a model name, then fields (name, type, metadata) until Ctrl-D
+model_cls = asyncio.run(ModelCreator().acreate())
+instance = asyncio.run(ModelCreator().acreate_instance())  # create and populate
 ```
 
 ## Error Handling
@@ -174,10 +244,10 @@ generator = ModelGenerator(
 from promptantic import ModelGenerator, PromptanticError
 
 try:
-    result = await ModelGenerator().apopulate(MyModel)
+    result = ModelGenerator().populate(MyModel)
 except KeyboardInterrupt:
     print("Operation cancelled by user")
-except PromptanticError as e:
+except PromptanticError as e:  # e.g. NoHandlerError for unsupported field types
     print(f"Error: {e}")
 ```
 
