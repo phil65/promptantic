@@ -29,8 +29,8 @@ classifiers = [
 dependencies = [
   "prompt-toolkit>=3.0.48",
   "pydantic",
-  "schemez",
   # Only add below (Copier)
+  "pydantic-core>=2.0",
   "universal-pathlib>=0.3.0",
 ]
 
