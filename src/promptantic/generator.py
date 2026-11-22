@@ -21,7 +21,7 @@ from prompt_toolkit.styles import merge_styles
 from pydantic import BaseModel, SecretStr, ValidationError
 from pydantic_core import PydanticUndefined
 
-from promptantic.exceptions import NoHandlerError
+from promptantic.exceptions import NoHandlerError, ValidationError as PromptanticValidationError
 from promptantic.handlers.constrained import ConstrainedIntHandler, ConstrainedStrHandler
 from promptantic.handlers.date_time import (
     DateHandler,
@@ -337,7 +337,7 @@ class ModelGenerator:
                         )
                         values[name] = value
                         break
-                    except ValidationError as e:
+                    except (ValidationError, PromptanticValidationError) as e:
                         if not self.retry_on_validation_error:
                             raise
                         print(f"\033[91mValidation error: {e!s}\033[0m")
