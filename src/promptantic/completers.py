@@ -111,7 +111,15 @@ class ImportStringCompleter(Completer):
 
     def __init__(self) -> None:
         self._modules: set[str] = set()
-        self._load_modules()
+        self._loaded = False
+
+    @property
+    def modules(self) -> set[str]:
+        """Available module names, collected on first use (this is expensive)."""
+        if not self._loaded:
+            self._load_modules()
+            self._loaded = True
+        return self._modules
 
     def _load_modules(self) -> None:
         """Load available Python modules."""
@@ -185,7 +193,7 @@ class ImportStringCompleter(Completer):
         current = parts[-1] if parts else ""
         prefix = ".".join(parts[:-1])
 
-        for module_name in self._modules:
+        for module_name in self.modules:
             if module_name.lower().startswith(current.lower()):
                 full_path = f"{prefix}.{module_name}" if prefix else module_name
                 yield Completion(
