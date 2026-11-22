@@ -52,10 +52,12 @@ pip install promptantic
 from pydantic import BaseModel, Field
 from promptantic import ModelGenerator
 
+
 class Person(BaseModel):
     name: str = Field(description="Person's full name")
     age: int = Field(description="Age in years", gt=0)
     email: str = Field(description="Email address", pattern=r"[^@]+@[^@]+\.[^@]+")
+
 
 # Create and use the generator
 generator = ModelGenerator()
@@ -94,10 +96,10 @@ print(person)
 from pydantic import BaseModel, Field
 from pathlib import Path
 
+
 class Config(BaseModel):
     environment: str = Field(
-        description="Select environment",
-        completions=["development", "staging", "production"]
+        description="Select environment", completions=["development", "staging", "production"]
     )
     config_path: Path = Field(description="Path to config file")  # Has path completion
 ```
@@ -110,9 +112,11 @@ class Address(BaseModel):
     city: str = Field(description="City name")
     country: str = Field(description="Country name")
 
+
 class Person(BaseModel):
     name: str = Field(description="Full name")
     address: Address = Field(description="Person's address")
+
 
 # Will prompt for all fields recursively
 person = await ModelGenerator().apopulate(Person)
@@ -124,13 +128,16 @@ person = await ModelGenerator().apopulate(Person)
 class Student(BaseModel):
     student_id: int
 
+
 class Teacher(BaseModel):
     teacher_id: str
     subject: str
 
+
 class Person(BaseModel):
     name: str
     role: Student | Teacher  # Will show selection dialog
+
 
 # Will prompt for type selection before filling fields
 person = await ModelGenerator().apopulate(Person)
@@ -155,9 +162,9 @@ generator = ModelGenerator(style=custom_style)
 
 ```python
 generator = ModelGenerator(
-    show_progress=True,        # Show field progress
-    allow_back=True,          # Allow going back to previous fields
-    retry_on_validation_error=True  # Retry on validation errors
+    show_progress=True,  # Show field progress
+    allow_back=True,  # Allow going back to previous fields
+    retry_on_validation_error=True,  # Retry on validation errors
 )
 ```
 

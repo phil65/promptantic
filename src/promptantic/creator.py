@@ -39,6 +39,18 @@ COMMON_TYPES: dict[str, type[Any] | str] = {
 }
 
 
+def _resolve_type_spec(spec: type[Any] | str) -> type[Any]:
+    """Resolve an entry of COMMON_TYPES to an actual type."""
+    if not isinstance(spec, str):
+        return spec
+    if "[" not in spec and "." in spec:
+        # Dotted import path like "datetime.datetime"
+        module_path, _, attr = spec.rpartition(".")
+        return cast(type[Any], getattr(importlib.import_module(module_path), attr))
+    # Simple generic expressions like "list[str]" or "dict[str, Any]"
+    return cast(type[Any], eval(spec, {"Any": Any}))
+
+
 class ModelCreator:
     """Helper class for creating Pydantic models interactively."""
 
@@ -149,7 +161,7 @@ class ModelCreator:
 
     async def _prompt_field_type(self) -> FieldType:
         """Prompt for field type."""
-        choices = [(str(typ), desc) for desc, typ in COMMON_TYPES.items()]
+        choices = [(desc, desc) for desc in COMMON_TYPES]
         choices.append(("custom", "Custom type (import path)"))
 
         selected = await radiolist_dialog(
@@ -157,6 +169,10 @@ class ModelCreator:
             text="Choose a type:",
             values=choices,
         ).run_async()
+
+        if selected is None:
+            # Dialog was cancelled: treat like Ctrl-D (stop defining fields)
+            raise EOFError
 
         if selected == "custom":
             # Use ImportStringCompleter for good UX
@@ -174,9 +190,10 @@ class ModelCreator:
                     return cast(type[Any], module)
                 except Exception as e:  # noqa: BLE001
                     print(f"Invalid type: {e}")
-        elif selected == "str with email validation":
+        spec = COMMON_TYPES[selected]
+        if spec == "str with email validation":
             return Annotated[str, Field(pattern=r"[^@]+@[^@]+\.[^@]+")]
-        elif selected == "str with url validation":
+        if spec == "str with url validation":
             return Annotated[
                 str,
                 Field(
@@ -192,7 +209,7 @@ class ModelCreator:
                 ),
             ]
 
-        return cast(type[Any], eval(selected))
+        return _resolve_type_spec(spec)
 
     async def _prompt_field_info(self) -> FieldInfo | None:  # noqa: PLR0911
         """Prompt for field metadata."""

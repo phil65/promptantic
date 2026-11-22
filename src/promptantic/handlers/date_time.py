@@ -2,7 +2,7 @@
 
 from __future__ import annotations
 
-import datetime
+import datetime as dt
 from typing import Any
 from zoneinfo import ZoneInfo
 
@@ -20,11 +20,11 @@ class DateHandler(BaseHandler):
     async def handle(
         self,
         field_name: str,
-        field_type: type[datetime.date],
+        field_type: type[dt.date],
         description: str | None = None,
-        default: datetime.date | None = None,
+        default: dt.date | None = None,
         **options: Any,
-    ) -> datetime.date:
+    ) -> dt.date:
         """Handle date input."""
         session: PromptSession[Any] = PromptSession()
         default_str = default.isoformat() if default else None
@@ -44,7 +44,7 @@ class DateHandler(BaseHandler):
                 if not result and default is not None:
                     return default
 
-                return datetime.date.fromisoformat(result)
+                return dt.date.fromisoformat(result)
             except ValueError as e:
                 msg = f"Invalid date format: {e!s}"
                 raise ValidationError(msg) from e
@@ -57,18 +57,18 @@ class TimeHandler(BaseHandler):
         """Format time default value."""
         if default is None:
             return None
-        if isinstance(default, datetime.time):
+        if isinstance(default, dt.time):
             return default.isoformat()
         return str(default)
 
     async def handle(
         self,
         field_name: str,
-        field_type: type[datetime.time],
+        field_type: type[dt.time],
         description: str | None = None,
-        default: datetime.time | None = None,
+        default: dt.time | None = None,
         **options: Any,
-    ) -> datetime.time:
+    ) -> dt.time:
         """Handle time input."""
         session: PromptSession[Any] = PromptSession()
         default_str = self.format_default(default)
@@ -88,7 +88,7 @@ class TimeHandler(BaseHandler):
                 if not result and default is not None:
                     return default
 
-                return datetime.time.fromisoformat(result)
+                return dt.time.fromisoformat(result)
             except ValueError as e:
                 msg = f"Invalid time format: {e!s}"
                 raise ValidationError(msg) from e
@@ -101,20 +101,20 @@ class DateTimeHandler(BaseHandler):
         """Format datetime default value."""
         if default is None:
             return None
-        if isinstance(default, datetime.datetime):
+        if isinstance(default, dt.datetime):
             if default.tzinfo:
                 return default.isoformat()
-            return default.replace(tzinfo=datetime.UTC).isoformat()
+            return default.replace(tzinfo=dt.UTC).isoformat()
         return str(default)
 
     async def handle(
         self,
         field_name: str,
-        field_type: type[datetime.datetime],
+        field_type: type[dt.datetime],
         description: str | None = None,
-        default: datetime.datetime | None = None,
+        default: dt.datetime | None = None,
         **options: Any,
-    ) -> datetime.datetime:
+    ) -> dt.datetime:
         """Handle datetime input."""
         session: PromptSession[Any] = PromptSession()
         default_str = self.format_default(default)
@@ -135,16 +135,16 @@ class DateTimeHandler(BaseHandler):
                     return default
 
                 # Parse datetime with timezone support
-                dt = datetime.datetime.fromisoformat(result)
+                parsed = dt.datetime.fromisoformat(result)
 
                 # Convert naive datetime to UTC if no timezone
-                if not dt.tzinfo:
-                    dt = dt.replace(tzinfo=datetime.UTC)
+                if not parsed.tzinfo:
+                    parsed = parsed.replace(tzinfo=dt.UTC)
             except ValueError as e:
                 msg = f"Invalid datetime format: {e!s}"
                 raise ValidationError(msg) from e
             else:
-                return dt
+                return parsed
 
 
 class TimeDeltaHandler(BaseHandler):
@@ -154,18 +154,18 @@ class TimeDeltaHandler(BaseHandler):
         """Format timedelta default value."""
         if default is None:
             return None
-        if isinstance(default, datetime.timedelta):
+        if isinstance(default, dt.timedelta):
             return str(default.total_seconds())
         return str(default)
 
     async def handle(
         self,
         field_name: str,
-        field_type: type[datetime.timedelta],
+        field_type: type[dt.timedelta],
         description: str | None = None,
-        default: datetime.timedelta | None = None,
+        default: dt.timedelta | None = None,
         **options: Any,
-    ) -> datetime.timedelta:
+    ) -> dt.timedelta:
         """Handle timedelta input."""
         session: PromptSession[Any] = PromptSession()
         default_str = self.format_default(default)
@@ -185,7 +185,7 @@ class TimeDeltaHandler(BaseHandler):
                 if not result and default is not None:
                     return default
 
-                return datetime.timedelta(seconds=float(result))
+                return dt.timedelta(seconds=float(result))
             except ValueError as e:
                 msg = f"Invalid duration: {e!s}"
                 raise ValidationError(msg) from e

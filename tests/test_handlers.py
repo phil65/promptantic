@@ -1,7 +1,7 @@
 # tests/test_handlers.py
 from __future__ import annotations
 
-import datetime
+import datetime as dt
 from decimal import Decimal
 import os
 from pathlib import Path
@@ -79,8 +79,8 @@ async def test_model_with_skipped_fields():
     class TestModel(BaseModel):
         name: str
         age: int
-        created_at: datetime.datetime = Field(
-            default_factory=datetime.datetime.now, json_schema_extra={"skip_prompt": True}
+        created_at: dt.datetime = Field(
+            default_factory=dt.datetime.now, json_schema_extra={"skip_prompt": True}
         )
 
     generator = ModelGenerator()
@@ -97,7 +97,7 @@ async def test_model_with_skipped_fields():
 
         assert model.name == "Test User"
         assert model.age == 25  # noqa: PLR2004
-        assert isinstance(model.created_at, datetime.datetime)
+        assert isinstance(model.created_at, dt.datetime)
 
 
 # Optional: Test complex types separately

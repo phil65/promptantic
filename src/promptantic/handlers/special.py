@@ -88,7 +88,7 @@ class PathHandler(BaseHandler[os.PathLike[str]]):
 
     # TODO: added the ignore for a quick fix, this is related to UPath changes
     # (not os.pathLike anymore)
-    async def handle(  # type: ignore[override]
+    async def handle(  # ty: ignore[incompatible-method-override]
         self,
         field_name: str,
         field_type: type[os.PathLike[str]],
@@ -119,9 +119,9 @@ class PathHandler(BaseHandler[os.PathLike[str]]):
 
                 # Handle empty input with default
                 if not result and default is not None:
-                    return path_cls(default).expanduser()  # type: ignore
+                    return path_cls(default).expanduser()
 
-                path = path_cls(result).expanduser()  # type: ignore
+                path = path_cls(result).expanduser()
 
                 # Optional: Add validation for existence/type
                 if field_extra.get("must_exist", False) and not path.exists():
@@ -210,7 +210,7 @@ class EmailHandler(BaseHandler):
 
         # Get custom regex pattern if provided
         custom_pattern = field_extra.get("email_pattern")
-        regex = re.compile(custom_pattern) if custom_pattern else self._email_regex
+        regex: re.Pattern[str] = re.compile(custom_pattern) if custom_pattern else self._email_regex
 
         while True:
             result = await session.prompt_async(
@@ -267,7 +267,7 @@ class URLHandler(BaseHandler):
 
         # Get custom regex pattern if provided
         custom_pattern = field_extra.get("url_pattern")
-        regex = re.compile(custom_pattern) if custom_pattern else self._url_regex
+        regex: re.Pattern[str] = re.compile(custom_pattern) if custom_pattern else self._url_regex
 
         while True:
             result = await session.prompt_async(

@@ -4,7 +4,7 @@ from __future__ import annotations
 
 import asyncio
 from collections import Counter, defaultdict, deque
-import datetime
+import datetime as dt
 from decimal import Decimal
 from enum import Enum
 from fractions import Fraction
@@ -13,7 +13,7 @@ from pathlib import Path
 import re
 import sys
 import types
-from typing import TYPE_CHECKING, Any, TypeVar, get_origin, overload
+from typing import TYPE_CHECKING, Any, TypeVar, cast, get_origin, overload
 from uuid import UUID
 from zoneinfo import ZoneInfo
 
@@ -144,10 +144,10 @@ class ModelGenerator:
         self.register_handler(ipaddress.IPv6Network, NetworkHandler(self))
 
         # DateTime types
-        self.register_handler(datetime.date, DateHandler(self))
-        self.register_handler(datetime.time, TimeHandler(self))
-        self.register_handler(datetime.datetime, DateTimeHandler(self))
-        self.register_handler(datetime.timedelta, TimeDeltaHandler(self))
+        self.register_handler(dt.date, DateHandler(self))
+        self.register_handler(dt.time, TimeHandler(self))
+        self.register_handler(dt.datetime, DateTimeHandler(self))
+        self.register_handler(dt.timedelta, TimeDeltaHandler(self))
         self.register_handler(ZoneInfo, TimezoneHandler(self))
         # Enum handler
         self.register_handler(Enum, EnumHandler(self))
@@ -249,11 +249,9 @@ class ModelGenerator:
         Raises:
             NoHandlerError: If no handler is found for a field type
         """
-        if sys.platform == "win32":
-            # Windows requires a specific event loop policy
-            asyncio.set_event_loop_policy(asyncio.WindowsSelectorEventLoopPolicy())
-
-        return asyncio.run(self.apopulate(model, _test_mode=_test_mode))
+        # Windows requires a selector event loop
+        loop_factory = asyncio.SelectorEventLoop if sys.platform == "win32" else None
+        return asyncio.run(self.apopulate(model, _test_mode=_test_mode), loop_factory=loop_factory)
 
     @overload
     async def apopulate(self, model: type[M], _test_mode: bool = False) -> M: ...
@@ -303,7 +301,9 @@ class ModelGenerator:
                 if self.show_progress:
                     print(f"\nField {current}/{total}")
 
-                field_type = field.annotation if field.annotation is not None else str
+                field_type = cast(
+                    type[Any], field.annotation if field.annotation is not None else str
+                )
 
                 handler = self.get_handler(
                     field_type,
@@ -344,8 +344,6 @@ class ModelGenerator:
 
 if __name__ == "__main__":
     from pydantic import BaseModel, Field
-
-    from promptantic import ModelGenerator
 
     class Person(BaseModel):
         name: str = Field(description="Person's full name")

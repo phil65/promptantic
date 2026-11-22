@@ -36,7 +36,7 @@ class UnionHandler(BaseHandler[Any]):
         if typ is None:
             return "None"
         if is_model_type(typ):
-            return typ.__name__ if hasattr(typ, "__name__") else str(typ)
+            return str(getattr(typ, "__name__", typ))
         if hasattr(typ, "__name__"):
             return typ.__name__.lower()
         return str(typ)
