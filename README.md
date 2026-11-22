@@ -13,7 +13,6 @@ prompt for each one, with completion, validation and retry.
 [![Implementation](https://img.shields.io/pypi/implementation/promptantic.svg)](https://pypi.org/project/promptantic/)
 [![Releases](https://img.shields.io/github/downloads/phil65/promptantic/total.svg)](https://github.com/phil65/promptantic/releases)
 [![Github Contributors](https://img.shields.io/github/contributors/phil65/promptantic)](https://github.com/phil65/promptantic/graphs/contributors)
-[![Github Discussions](https://img.shields.io/github/discussions/phil65/promptantic)](https://github.com/phil65/promptantic/discussions)
 [![Github Forks](https://img.shields.io/github/forks/phil65/promptantic)](https://github.com/phil65/promptantic/forks)
 [![Github Issues](https://img.shields.io/github/issues/phil65/promptantic)](https://github.com/phil65/promptantic/issues)
 [![Github Issues](https://img.shields.io/github/issues-pr/phil65/promptantic)](https://github.com/phil65/promptantic/pulls)
