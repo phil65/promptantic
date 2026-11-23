@@ -18,6 +18,8 @@ from pydantic import TypeAdapter, ValidationError
 if TYPE_CHECKING:
     from collections.abc import Callable
 
+    from jsonschema.exceptions import ValidationError as JsonSchemaValidationError
+
 
 type Path = tuple[str | int, ...]
 
@@ -79,15 +81,27 @@ def _schema_target(schema: Mapping[str, Any]) -> FormTarget[Any]:
     validator = Draft202012Validator(schema, format_checker=FormatChecker())
 
     def validate(value: Any) -> Any:
-        issues = [
-            Issue(path=tuple(error.absolute_path), message=error.message)
-            for error in sorted(validator.iter_errors(value), key=lambda e: list(e.absolute_path))
-        ]
+        errors = sorted(validator.iter_errors(value), key=lambda e: list(e.absolute_path))
+        # one "required" error per missing property, each naming them all: keep each once
+        issues = list(dict.fromkeys(issue for error in errors for issue in _issues_of(error)))
         if issues:
             raise FormValidationError(issues)
         return value
 
     return FormTarget(schema=schema, validate_value=validate)
+
+
+def _issues_of(error: JsonSchemaValidationError) -> list[Issue]:
+    """Issues for a jsonschema error; a missing required property is placed at the property.
+
+    jsonschema reports it at the object ("'name' is a required property"), so a form
+    would show it away from the field.
+    """
+    path: Path = tuple(error.absolute_path)
+    if error.validator == "required" and isinstance(error.instance, dict):
+        missing = [name for name in error.validator_value if name not in error.instance]
+        return [Issue(path=(*path, name), message="Field required") for name in missing]
+    return [Issue(path=path, message=error.message)]
 
 
 def _type_target(target: type[Any]) -> FormTarget[Any]:

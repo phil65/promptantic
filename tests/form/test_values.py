@@ -101,3 +101,17 @@ def test_other_python_types() -> None:
     target = target_for(Point)
     assert target.validate({"x": 1}) == Point(1, 0)
     assert target_for(list[int]).validate([1, 2]) == [1, 2]
+
+
+def test_missing_required_properties_are_placed_at_the_property() -> None:
+    target = target_for({
+        "type": "object",
+        "properties": {"a": {"type": "string"}, "b": {"type": "string"}, "c": {}},
+        "required": ["a", "b"],
+    })
+    with pytest.raises(FormValidationError) as info:
+        target.validate({"c": 1})
+    assert [(issue.path, issue.message) for issue in info.value.issues] == [
+        (("a",), "Field required"),
+        (("b",), "Field required"),
+    ]
