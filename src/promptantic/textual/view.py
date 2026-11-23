@@ -44,10 +44,10 @@ class FormView(Widget):
 
     DEFAULT_CSS = """
     FormView { height: auto; }
-    FormView > #fields { height: auto; max-height: 70vh; }
-    FormView .field { margin: 0 0 1 0; }
-    FormView > #summary { color: $text-error; height: auto; }
-    FormView > #summary.-empty { display: none; }
+    FormView > #pa-fields { height: auto; max-height: 70vh; }
+    FormView .pa-field { margin: 0 0 1 0; }
+    FormView > #pa-summary { color: $text-error; height: auto; }
+    FormView > #pa-summary.-empty { display: none; }
     """
 
     class Submitted(Message):
@@ -79,16 +79,16 @@ class FormView(Widget):
         self._editors: dict[Path, Editor] = {}
 
     def compose(self) -> ComposeResult:
-        with VerticalScroll(id="fields"):
+        with VerticalScroll(id="pa-fields"):
             yield make_editor(self.root, (), self.initial, self._register)
-        yield Static("", id="summary", classes="-empty")
+        yield Static("", id="pa-summary", classes="-empty")
 
     def on_mount(self) -> None:
         self.call_after_refresh(self.focus_first)
 
     def focus_first(self) -> None:
         """Focus the first input, so typing goes straight into the form."""
-        for widget in self.query_one("#fields").query("*"):
+        for widget in self.query_one("#pa-fields").query("*"):
             if widget.focusable:
                 widget.focus()
                 return
@@ -102,7 +102,7 @@ class FormView(Widget):
         Raises:
             FieldError: Some input can't become a value.
         """
-        root = self.query_one("#fields").query_children(Editor).first()
+        root = self.query_one("#pa-fields").query_children(Editor).first()
         value = root.get_value()
         return {} if value is UNSET else value
 
@@ -142,7 +142,7 @@ class FormView(Widget):
         return None
 
     def _summary(self, messages: list[str]) -> None:
-        summary = self.query_one("#summary", Static)
+        summary = self.query_one("#pa-summary", Static)
         summary.update("\n".join(messages))
         summary.set_class(not messages, "-empty")
 
@@ -152,9 +152,9 @@ class FormPanel(Vertical):
 
     DEFAULT_CSS = """
     FormPanel { height: auto; }
-    FormPanel > #title { text-style: bold; margin: 0 0 1 0; }
-    FormPanel > #buttons { height: auto; margin: 1 0 0 0; }
-    FormPanel > #buttons Button { margin: 0 1 0 0; }
+    FormPanel > #pa-title { text-style: bold; margin: 0 0 1 0; }
+    FormPanel > #pa-buttons { height: auto; margin: 1 0 0 0; }
+    FormPanel > #pa-buttons Button { margin: 0 1 0 0; }
     """
 
     def __init__(
@@ -166,17 +166,17 @@ class FormPanel(Vertical):
 
     def compose(self) -> ComposeResult:
         if self.title_text:
-            yield Label(self.title_text, id="title")
+            yield Label(self.title_text, id="pa-title")
         yield self.form
-        with Horizontal(id="buttons"):
-            yield Button("Submit", variant="primary", id="submit")
-            yield Button("Cancel", id="cancel")
+        with Horizontal(id="pa-buttons"):
+            yield Button("Submit", variant="primary", id="pa-submit")
+            yield Button("Cancel", id="pa-cancel")
 
     def on_button_pressed(self, event: Button.Pressed) -> None:
         event.stop()
-        if event.button.id == "submit":
+        if event.button.id == "pa-submit":
             self.form.submit()
-        elif event.button.id == "cancel":
+        elif event.button.id == "pa-cancel":
             self.form.cancel()
 
 

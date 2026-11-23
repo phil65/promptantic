@@ -64,11 +64,11 @@ async def test_errors_show_at_their_fields() -> None:
         await pilot.pause()
         app.action_submit()
         await pilot.pause()
-        shown = [str(w.render()) for w in app.query(".errors") if not w.has_class("-empty")]
+        shown = [str(w.render()) for w in app.query(".pa-errors") if not w.has_class("-empty")]
         assert app.is_running  # not submitted
         assert any("required" in text.lower() for text in shown)  # customer
         assert any("1" in text for text in shown)  # quantity >= 1
-        summary = app.query_one("#summary", Static)
+        summary = app.query_one("#pa-summary", Static)
         assert not summary.has_class("-empty")
 
 
@@ -80,7 +80,7 @@ async def test_union_switches_variant_and_lists_add_rows() -> None:
         union.query_children(Select).first().value = 1  # dog
         await pilot.pause()
         notes = app.query_one(ListEditor)
-        await pilot.click(notes.query_children(".add").first())
+        await pilot.click(notes.query_children(".pa-add").first())
         await pilot.pause()
         notes.query(Input).last().value = "fragile"
         await pilot.pause()
@@ -147,7 +147,7 @@ async def test_optional_nested_object_is_switched_on_explicitly() -> None:
 
     app = FormApp(target_for(Order), initial={"customer": "Lu"})
     async with app.run_test() as pilot:
-        toggle = app.query(".enabled").first(Switch)
+        toggle = app.query(".pa-enabled").first(Switch)
         toggle.value = True
         await pilot.pause()
         inputs(app)[-2].value = "Main St 1"  # street (city follows)
@@ -163,3 +163,23 @@ async def test_typing_starts_in_the_first_field() -> None:
         await pilot.pause()
         await pilot.press("A", "d", "a")
         assert inputs(app)[0].value == "Ada"
+
+
+async def test_choices_without_default_start_empty() -> None:
+    schema = {
+        "type": "object",
+        "properties": {
+            "level": {
+                "oneOf": [{"const": "low", "title": "Low"}, {"const": "high", "title": "High"}]
+            },
+            "maybe": {"type": ["boolean", "null"]},
+        },
+    }
+    app = FormApp(target_for(schema))
+    async with app.run_test() as pilot:
+        level, maybe = app.query(Select)
+        assert level.value is Select.NULL
+        assert maybe.value is Select.NULL
+        app.action_submit()
+        await pilot.pause()
+    assert app.return_value == {"maybe": None}

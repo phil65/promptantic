@@ -62,7 +62,7 @@ Source = "https://github.com/phil65/promptantic"
 
 [project.optional-dependencies]
 textual = [
-  "textual>=8.2",
+  "textual>=8.2.8",
 ]
 
 [dependency-groups]

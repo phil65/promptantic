@@ -51,8 +51,8 @@ class Editor(Widget):
 
     DEFAULT_CSS = """
     Editor { height: auto; }
-    Editor > .errors { color: $text-error; height: auto; }
-    Editor > .errors.-empty { display: none; }
+    Editor > .pa-errors { color: $text-error; height: auto; }
+    Editor > .pa-errors.-empty { display: none; }
     """
 
     def __init__(self, node: FormNode, path: Path, initial: Any, register: Registry) -> None:
@@ -66,7 +66,7 @@ class Editor(Widget):
         self._register(self.path, self)
 
     def errors_widget(self) -> Static:
-        return Static("", classes="errors -empty")
+        return Static("", classes="pa-errors -empty")
 
     def get_value(self) -> Any | Unset:
         """The value entered so far (:data:`UNSET`: nothing).
@@ -77,7 +77,7 @@ class Editor(Widget):
         raise NotImplementedError
 
     def show_errors(self, messages: list[str]) -> None:
-        errors = self.query_children(".errors").first(Static)
+        errors = self.query_children(".pa-errors").first(Static)
         errors.update("\n".join(messages))
         errors.set_class(not messages, "-empty")
 
@@ -180,7 +180,7 @@ class BooleanEditor(Editor):
 
     def compose(self) -> ComposeResult:
         if self.node.nullable:
-            value = self.initial if isinstance(self.initial, bool) else Select.BLANK
+            value = self.initial if isinstance(self.initial, bool) else Select.NULL
             yield Select(self._OPTIONS, value=value, prompt="(none)", compact=True)
         else:
             yield Switch(value=self.initial is True)
@@ -189,7 +189,7 @@ class BooleanEditor(Editor):
     def get_value(self) -> Any | Unset:
         if self.node.nullable:
             value = self.query_one(Select).value
-            return None if value is Select.BLANK else value
+            return None if value is Select.NULL else value
         return self.query_one(Switch).value
 
 
@@ -201,10 +201,10 @@ class ChoiceEditor(Editor):
     def compose(self) -> ComposeResult:
         choices = self.node.choices
         if self.node.fixed:
-            yield Label(choices[0].label, classes="fixed")
+            yield Label(choices[0].label, classes="pa-fixed")
         else:
             values = [choice.value for choice in choices]
-            index = values.index(self.initial) if self.initial in values else Select.BLANK
+            index = values.index(self.initial) if self.initial in values else Select.NULL
             yield Select(
                 [(choice.label, i) for i, choice in enumerate(choices)],
                 value=index,
@@ -217,7 +217,7 @@ class ChoiceEditor(Editor):
         if self.node.fixed:
             return self.node.choices[0].value
         index = self.query_one(Select).value
-        if index is Select.BLANK:
+        if index is Select.NULL:
             return None if self.node.nullable else UNSET
         return self.node.choices[cast("int", index)].value
 
@@ -248,7 +248,7 @@ class NullEditor(Editor):
     """Nothing to enter: the value is ``null``."""
 
     def compose(self) -> ComposeResult:
-        yield Label("null", classes="fixed")
+        yield Label("null", classes="pa-fixed")
         yield self.errors_widget()
 
     def get_value(self) -> Any | Unset:
@@ -260,7 +260,7 @@ class _Row(Horizontal):
 
     DEFAULT_CSS = """
     _Row { height: auto; }
-    _Row > .entry { width: 1fr; height: auto; }
+    _Row > .pa-entry { width: 1fr; height: auto; }
     _Row > Button { min-width: 5; width: 5; }
     """
 
@@ -270,12 +270,12 @@ class ListEditor(Editor):
 
     node: ArrayNode | TupleNode
     DEFAULT_CSS = """
-    ListEditor > .rows { height: auto; padding-left: 2; }
-    ListEditor > .add { width: auto; }
+    ListEditor > .pa-rows { height: auto; padding-left: 2; }
+    ListEditor > .pa-add { width: auto; }
     """
 
     def compose(self) -> ComposeResult:
-        with Vertical(classes="rows"):
+        with Vertical(classes="pa-rows"):
             initial = self.initial if isinstance(self.initial, list | tuple) else []
             if isinstance(self.node, TupleNode):
                 for i, position in enumerate(self.node.positions):
@@ -285,18 +285,18 @@ class ListEditor(Editor):
                 for value in initial:
                     yield self._row(value)
         if isinstance(self.node, ArrayNode):
-            yield Button("+ Add", classes="add", compact=True)
+            yield Button("+ Add", classes="pa-add", compact=True)
         yield self.errors_widget()
 
     def _row(self, value: Any) -> _Row:
         node = cast("ArrayNode", self.node)
-        index = len(self.query(".rows > _Row")) if self.is_mounted else 0
+        index = len(self.query(".pa-rows > _Row")) if self.is_mounted else 0
         editor = make_editor(node.items, (*self.path, index), value, self._register)
-        editor.add_class("entry")
-        return _Row(editor, Button("✕", classes="remove", compact=True))
+        editor.add_class("pa-entry")
+        return _Row(editor, Button("✕", classes="pa-remove", compact=True))
 
     def _editors(self) -> list[Editor]:
-        rows = self.query_children(".rows").first(Vertical)
+        rows = self.query_children(".pa-rows").first(Vertical)
         if isinstance(self.node, TupleNode):
             return list(rows.query_children(Editor))
         return [row.query_children(Editor).first() for row in rows.query_children(_Row)]
@@ -307,9 +307,9 @@ class ListEditor(Editor):
 
     async def on_button_pressed(self, event: Button.Pressed) -> None:
         event.stop()
-        if event.button.has_class("add"):
-            await self.query_children(".rows").first(Vertical).mount(self._row(UNSET))
-        elif event.button.has_class("remove") and isinstance(event.button.parent, _Row):
+        if event.button.has_class("pa-add"):
+            await self.query_children(".pa-rows").first(Vertical).mount(self._row(UNSET))
+        elif event.button.has_class("pa-remove") and isinstance(event.button.parent, _Row):
             await event.button.parent.remove()
         self.check()
 
@@ -319,33 +319,33 @@ class MapEditor(Editor):
 
     node: ObjectNode
     DEFAULT_CSS = """
-    MapEditor > .rows { height: auto; padding-left: 2; }
-    MapEditor .key { width: 20; }
-    MapEditor > .add { width: auto; }
+    MapEditor > .pa-rows { height: auto; padding-left: 2; }
+    MapEditor .pa-key { width: 20; }
+    MapEditor > .pa-add { width: auto; }
     """
 
     def compose(self) -> ComposeResult:
-        with Vertical(classes="rows"):
+        with Vertical(classes="pa-rows"):
             if isinstance(self.initial, dict):
                 for key, value in self.initial.items():
                     yield self._row(str(key), value)
-        yield Button("+ Add", classes="add", compact=True)
+        yield Button("+ Add", classes="pa-add", compact=True)
         yield self.errors_widget()
 
     def _row(self, key: str, value: Any) -> _Row:
         value_node = self.node.additional
         assert value_node is not None  # is_map
         editor = make_editor(value_node, (*self.path, key), value, self._register)
-        editor.add_class("entry")
+        editor.add_class("pa-entry")
         return _Row(
-            Input(value=key, placeholder="key", classes="key", compact=True),
+            Input(value=key, placeholder="key", classes="pa-key", compact=True),
             editor,
-            Button("✕", classes="remove", compact=True),
+            Button("✕", classes="pa-remove", compact=True),
         )
 
     def get_value(self) -> Any | Unset:
         result: dict[str, Any] = {}
-        rows = self.query_children(".rows").first(Vertical)
+        rows = self.query_children(".pa-rows").first(Vertical)
         for row in rows.query_children(_Row):
             key = row.query_children(Input).first().value
             if key:
@@ -355,9 +355,9 @@ class MapEditor(Editor):
 
     async def on_button_pressed(self, event: Button.Pressed) -> None:
         event.stop()
-        if event.button.has_class("add"):
-            await self.query_children(".rows").first(Vertical).mount(self._row("", UNSET))
-        elif event.button.has_class("remove") and isinstance(event.button.parent, _Row):
+        if event.button.has_class("pa-add"):
+            await self.query_children(".pa-rows").first(Vertical).mount(self._row("", UNSET))
+        elif event.button.has_class("pa-remove") and isinstance(event.button.parent, _Row):
             await event.button.parent.remove()
 
 
@@ -376,23 +376,23 @@ class ObjectEditor(Editor):
     """Title of the folding section (the field's label, set by the containing object)."""
 
     DEFAULT_CSS = """
-    ObjectEditor .field { height: auto; margin: 0 0 1 0; }
-    ObjectEditor .label { text-style: bold; }
-    ObjectEditor .help { color: $text-muted; }
+    ObjectEditor .pa-field { height: auto; margin: 0 0 1 0; }
+    ObjectEditor .pa-label { text-style: bold; }
+    ObjectEditor .pa-help { color: $text-muted; }
     ObjectEditor Collapsible { padding-left: 1; }
-    ObjectEditor > .toggle { height: auto; }
-    ObjectEditor .fields { height: auto; }
-    ObjectEditor .fields.-off { display: none; }
+    ObjectEditor > .pa-toggle { height: auto; }
+    ObjectEditor .pa-fields { height: auto; }
+    ObjectEditor .pa-fields.-off { display: none; }
     """
 
     def compose(self) -> ComposeResult:
         self._editors: dict[str, Editor] = {}
         enabled = not self.node.nullable or isinstance(self.initial, dict)
         if self.node.nullable:
-            with Horizontal(classes="toggle"):
-                yield Switch(value=enabled, classes="enabled")
+            with Horizontal(classes="pa-toggle"):
+                yield Switch(value=enabled, classes="pa-enabled")
                 yield Label(self.heading or self.node.meta.title or "Fill in")
-        fields = Vertical(*self._fields(), classes="fields")
+        fields = Vertical(*self._fields(), classes="pa-fields")
         fields.set_class(not enabled, "-off")
         if self.path and self.fold and not self.node.nullable:
             with Collapsible(title=self.heading or self.node.meta.title or "", collapsed=False):
@@ -420,17 +420,17 @@ class ObjectEditor(Editor):
             if isinstance(editor, ObjectEditor):
                 editor.heading = label  # its section (or switch) carries the label
             else:
-                parts.append(Label(label, classes="label"))
+                parts.append(Label(label, classes="pa-label"))
             if description := prop.node.meta.description:
-                parts.append(Static(description, classes="help"))
+                parts.append(Static(description, classes="pa-help"))
             parts.append(editor)
-            widgets.append(Vertical(*parts, classes="field"))
+            widgets.append(Vertical(*parts, classes="pa-field"))
         return widgets
 
     def _enabled(self) -> bool:
         if not self.node.nullable:
             return True
-        return self.query_children(".toggle").first().query_children(Switch).first().value
+        return self.query_children(".pa-toggle").first().query_children(Switch).first().value
 
     def get_value(self) -> Any | Unset:
         if not self._enabled():
@@ -443,17 +443,17 @@ class ObjectEditor(Editor):
         return result
 
     def on_switch_changed(self, event: Switch.Changed) -> None:
-        if not event.switch.has_class("enabled"):
+        if not event.switch.has_class("pa-enabled"):
             return
         event.stop()
-        self.query_children(".fields").first().set_class(not event.value, "-off")
+        self.query_children(".pa-fields").first().set_class(not event.value, "-off")
 
 
 class UnionEditor(Editor):
     """Pick the kind first, then fill that kind's editor."""
 
     node: UnionNode
-    DEFAULT_CSS = "UnionEditor > .variant { height: auto; padding-left: 2; margin: 1 0 0 0; }"
+    DEFAULT_CSS = "UnionEditor > .pa-variant { height: auto; padding-left: 2; margin: 1 0 0 0; }"
 
     def compose(self) -> ComposeResult:
         variants = self.node.variants
@@ -465,7 +465,7 @@ class UnionEditor(Editor):
             prompt="(none)",
             compact=True,
         )
-        with Vertical(classes="variant"):
+        with Vertical(classes="pa-variant"):
             if isinstance(index, int):
                 yield self._variant_editor(index, self.initial)
         yield self.errors_widget()
@@ -474,16 +474,16 @@ class UnionEditor(Editor):
         """The variant the initial value belongs to (by discriminator), else the first."""
         variants = self.node.variants
         if self.initial is None and self.node.nullable:
-            return Select.BLANK
+            return Select.NULL
         if self.node.discriminator and isinstance(self.initial, dict):
             tag = self.initial.get(self.node.discriminator)
             for i, variant in enumerate(variants):
                 if variant.label == tag:
                     return i
-        return 0 if variants else Select.BLANK
+        return 0 if variants else Select.NULL
 
     def get_value(self) -> Any | Unset:
-        holder = self.query_children(".variant").first(Vertical)
+        holder = self.query_children(".pa-variant").first(Vertical)
         editors = list(holder.query_children(Editor))
         if not editors:
             return None if self.node.nullable else UNSET
@@ -493,7 +493,7 @@ class UnionEditor(Editor):
         if event.select.parent is not self:
             return
         event.stop()
-        holder = self.query_children(".variant").first(Vertical)
+        holder = self.query_children(".pa-variant").first(Vertical)
         await holder.remove_children()
         if isinstance(event.value, int):
             await holder.mount(self._variant_editor(event.value, UNSET))
