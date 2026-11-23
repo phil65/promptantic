@@ -58,6 +58,11 @@ Homepage = "https://github.com/phil65/promptantic"
 Issues = "https://github.com/phil65/promptantic/issues"
 Source = "https://github.com/phil65/promptantic"
 
+[project.optional-dependencies]
+textual = [
+  "textual>=8.2",
+]
+
 [dependency-groups]
 dev = [
   "deptry",

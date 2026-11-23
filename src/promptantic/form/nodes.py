@@ -180,10 +180,13 @@ class Property:
     name: str
     node: FormNode
     required: bool
+    title: str | None = None
+    """The field's own title; the node's title may be that of a referenced schema."""
 
     @property
     def label(self) -> str:
-        return self.node.meta.title or self.name
+        """The field's title, else its name as words (``ship_to`` -> ``Ship To``)."""
+        return self.title or self.name.replace("_", " ").title()
 
 
 @dataclass(frozen=True, eq=False)

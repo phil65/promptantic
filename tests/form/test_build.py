@@ -253,7 +253,7 @@ def test_mcp_elicitation_schema() -> None:
     }
     form = build_form(schema)
     assert isinstance(form, ObjectNode)
-    assert [p.label for p in form.properties] == ["Your name", "count", "agree", "size", "tags"]
+    assert [p.label for p in form.properties] == ["Your name", "Count", "Agree", "Size", "Tags"]
     assert [prop(form, "count").node.meta.default] == [3]
     assert prop(form, "name").node.meta.default is UNSET
     tags = prop(form, "tags").node

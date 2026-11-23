@@ -262,7 +262,12 @@ def _object(s: dict[str, Any], meta: Meta, nullable: bool, resolver: Resolver[An
 
     def build_properties() -> tuple[Property, ...]:
         return tuple(
-            Property(name=name, node=_node(prop, resolver), required=name in required)
+            Property(
+                name=name,
+                node=_node(prop, resolver),
+                required=name in required,
+                title=prop.get("title") if isinstance(prop, Mapping) else None,
+            )
             for name, prop in properties.items()
         )
 
