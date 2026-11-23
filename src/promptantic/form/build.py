@@ -94,7 +94,8 @@ def _meta(schema: Mapping[str, Any]) -> Meta:
         description=schema.get("description"),
         default=schema.get("default", UNSET),
         examples=tuple(schema.get("examples", ())),
-        read_only=bool(schema.get("readOnly", False)),
+        # readOnly, or promptantic's skip_prompt (json_schema_extra): don't ask, keep the default
+        read_only=bool(schema.get("readOnly", False) or schema.get("skip_prompt", False)),
         write_only=bool(schema.get("writeOnly", False)),
         deprecated=bool(schema.get("deprecated", False)),
         extensions={

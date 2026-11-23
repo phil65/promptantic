@@ -1,6 +1,6 @@
 # Plan: JSON Schema forms
 
-Status: steps 1-3 implemented (2026-11-23); integration (acptui, agentpool) next.
+Status: done (2026-11-23): 2.0 has only the schema-based forms; acptui and agentpool use them.
 
 Done: `promptantic.form` (core), `promptantic.textual` (FormView / FormScreen / fill_inline),
 `promptantic.sequential` (fallback), `promptantic.fill()`. Generic JSON Schema helpers went to

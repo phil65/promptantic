@@ -292,6 +292,8 @@ class ListEditor(Editor):
         node = cast("ArrayNode", self.node)
         index = len(self.query(".pa-rows > _Row")) if self.is_mounted else 0
         editor = make_editor(node.items, (*self.path, index), value, self._register)
+        if isinstance(editor, ObjectEditor):
+            editor.heading = f"#{index + 1}"  # rather than the item schema's (class) name
         editor.add_class("pa-entry")
         return _Row(editor, Button("✕", classes="pa-remove", compact=True))
 

@@ -25,6 +25,7 @@ from promptantic.form import (
 from promptantic.generator import ModelGenerator
 from promptantic.exceptions import PromptanticError
 from promptantic.creator import ModelCreator
+from promptantic.model_spec import FieldSpec, ModelSpec
 
 
 SKIP_PROMPT_KEY = "skip_prompt"
@@ -38,11 +39,13 @@ warnings.filterwarnings(
 
 __all__ = [
     "SKIP_PROMPT_KEY",
+    "FieldSpec",
     "FormCancelledError",
     "FormTarget",
     "FormValidationError",
     "ModelCreator",
     "ModelGenerator",
+    "ModelSpec",
     "PromptanticError",
     "SchemaError",
     "__version__",
