@@ -1,6 +1,12 @@
 # Plan: JSON Schema forms
 
-Status: draft (2026-11-23)
+Status: steps 1-3 implemented (2026-11-23); integration (acptui, agentpool) next.
+
+Done: `promptantic.form` (core), `promptantic.textual` (FormView / FormScreen / fill_inline),
+`promptantic.sequential` (fallback), `promptantic.fill()`. Generic JSON Schema helpers went to
+`schemez.jsonschema_utils` (schemez 2.4.0). Decisions on the open questions below: `fill()` is
+the new API and `ModelGenerator` stays as the classic API for now; `ModelCreator` stays until the
+switch-over; unions use a variant select first.
 
 Goal: promptantic becomes an automatic UI for JSON Schema. Pydantic models are one source of
 schemas, not the core. The same engine serves agentpool's structured input and MCP

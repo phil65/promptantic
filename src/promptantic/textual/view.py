@@ -22,6 +22,7 @@ from textual.widgets import Button, Label, Static
 from promptantic.form import (
     UNSET,
     FieldError,
+    FormCancelledError,
     FormValidationError,
     build_form,
     target_for,
@@ -36,10 +37,6 @@ if TYPE_CHECKING:
 
     from promptantic.form import FormTarget
     from promptantic.form.target import Path
-
-
-class FormCancelledError(Exception):
-    """The user closed the form without submitting it."""
 
 
 class FormView(Widget):

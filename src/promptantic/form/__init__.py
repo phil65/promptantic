@@ -26,7 +26,13 @@ from promptantic.form.nodes import (
     UnionNode,
     Variant,
 )
-from promptantic.form.target import FormTarget, FormValidationError, Issue, target_for
+from promptantic.form.target import (
+    FormCancelledError,
+    FormTarget,
+    FormValidationError,
+    Issue,
+    target_for,
+)
 from promptantic.form.values import FieldError, field_errors, initial_value, parse_text
 
 
@@ -38,6 +44,7 @@ __all__ = [
     "Choice",
     "ChoiceNode",
     "FieldError",
+    "FormCancelledError",
     "FormNode",
     "FormTarget",
     "FormValidationError",

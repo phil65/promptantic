@@ -29,45 +29,81 @@ prompt for each one, with completion, validation and retry.
 
 ## Features
 
-- One prompt per field, driven by the field's type, description and default
-- Validation with retry on invalid input
-- Autocompletion for paths, timezones, import strings and custom value lists
-- Nested models, sequences and mappings
-- Union types via a selection dialog
-- Fields can be skipped (`skip_prompt`) and use their default
-- Extensible: register your own handler for any type
-- Customizable styling
-- `ModelCreator`: define a new model class interactively
+- Forms from **any JSON Schema** (2020-12: `$ref` with `$defs`, pointers, `$anchor` and
+  `$id`, `allOf`, `anyOf` / `oneOf`, `enum` / `const`, type lists, `prefixItems`,
+  `additionalProperties`, formats, numeric and length constraints), or from a **Python
+  type**: pydantic models, dataclasses, TypedDicts, `list[...]`, ...
+- A **Textual** form (all fields at once, folding sections, live checks, errors at their
+  fields) that renders below the prompt, or embeds into any Textual app
+- A **one-prompt-per-field** fallback (prompt-toolkit) for terminals without a full TUI
+- One UI-independent core (`promptantic.form`) both renderers share; validation with
+  `jsonschema` for schemas and pydantic for types (which also gives you an instance)
 
 ## Installation
 
 ```bash
-pip install promptantic
+pip install promptantic            # core + one-prompt-per-field
+pip install "promptantic[textual]" # + the Textual form
 ```
 
 ## Quick Start
 
 ```python
 from pydantic import BaseModel, Field
-
-from promptantic import ModelGenerator
-
-
-class Person(BaseModel):
-    name: str = Field(description="Person's full name")
-    age: int = Field(description="Age in years", gt=0)
-    email: str = Field(description="Email address", pattern=r"[^@]+@[^@]+\.[^@]+")
+from promptantic import fill
 
 
-generator = ModelGenerator()
-person = generator.populate(Person)  # or: await generator.apopulate(Person)
-print(person)
+class Order(BaseModel):
+    customer: str = Field(min_length=1, description="Who ordered")
+    quantity: int = Field(default=1, ge=1)
+    express: bool = False
+
+
+order = await fill(Order)  # an Order instance
+
+# A JSON Schema gives a dict
+answer = await fill({
+    "type": "object",
+    "properties": {"name": {"type": "string"}, "count": {"type": "integer", "default": 2}},
+    "required": ["name"],
+})
 ```
 
-`populate` / `apopulate` accept a model class or an instance; values that were explicitly set
-on an instance are offered as defaults.
+`fill()` uses the Textual form when it's installed and the terminal is interactive, else one
+prompt per field (`ui="textual"` / `ui="sequential"` to choose). It raises
+`FormCancelledError` when the user cancels.
 
-## Supported Types
+### In a Textual app
+
+```python
+from promptantic.textual import FormScreen, FormView
+
+# A modal that dismisses with the validated result (None when cancelled)
+self.push_screen(FormScreen(Order, initial={"customer": "Ada"}), on_result)
+
+# Or embed the form and handle FormView.Submitted / FormView.Cancelled yourself
+yield FormView(target_for(schema))
+```
+
+### The core
+
+```python
+from promptantic.form import build_form, field_errors, target_for
+
+target = target_for(Order)  # schema + validation (also for plain JSON Schemas)
+root = build_form(target.schema)  # the form tree: ObjectNode, StringNode, UnionNode, ...
+result = target.validate(value)  # FormValidationError lists every issue with its path
+```
+
+Nested parts of the tree are built on first access, so recursive schemas work. Generic
+JSON Schema helpers (`$ref` resolution, `allOf` merging, type and constant detection) live in
+[schemez](https://github.com/phil65/schemez) (`schemez.jsonschema_utils`).
+
+## The classic `ModelGenerator`
+
+The original API, which prompts by Python type (prompt-toolkit only), still works:
+
+### Supported Types
 
 ### Basic Types
 - `str`, `int`, `float`, `bool`, `decimal.Decimal`, `fractions.Fraction`, `None`
@@ -91,7 +127,7 @@ on an instance are offered as defaults.
 - `re.Pattern`
 - `pydantic.ImportString` and `types.ModuleType` (with import path autocompletion)
 
-## Advanced Usage
+### Advanced Usage
 
 ### Field options
 

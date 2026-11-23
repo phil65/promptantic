@@ -23,6 +23,7 @@ from promptantic.form import (
     BooleanNode,
     ChoiceNode,
     FieldError,
+    FormCancelledError,
     FormTarget,
     FormValidationError,
     NullNode,
@@ -67,7 +68,10 @@ async def fill_sequential(
         echo(heading)
     value: Any = dict(initial) if initial is not None else UNSET
     while True:
-        value = await asker.ask(root, "", value, required=True, depth=0)
+        try:
+            value = await asker.ask(root, "", value, required=True, depth=0)
+        except (EOFError, KeyboardInterrupt):  # Ctrl-D / Ctrl-C
+            raise FormCancelledError from None
         try:
             return form_target.validate({} if value is UNSET else value)
         except FormValidationError as exc:

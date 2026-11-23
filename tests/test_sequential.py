@@ -7,6 +7,7 @@ from prompt_toolkit import PromptSession
 from prompt_toolkit.input import create_pipe_input
 from prompt_toolkit.output import DummyOutput
 from pydantic import BaseModel, Field
+import pytest
 
 from promptantic import fill
 from promptantic.sequential import fill_sequential
@@ -89,3 +90,14 @@ async def test_fill_picks_sequential_without_a_terminal(monkeypatch) -> None:
     monkeypatch.setattr("promptantic.sequential.fill_sequential", fake)
     assert await fill({"type": "object"}) == {"ok": True}  # pytest's stdin isn't a TTY
     assert calls == ["sequential"]
+
+
+async def test_end_of_input_cancels() -> None:
+    from promptantic import FormCancelledError
+
+    with create_pipe_input() as pipe:
+        pipe.send_text("Ada\n")
+        pipe.close()
+        session: PromptSession[str] = PromptSession(input=pipe, output=DummyOutput())
+        with pytest.raises(FormCancelledError):
+            await asyncio.wait_for(fill_sequential(Order, session=session, echo=print), 10)

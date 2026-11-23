@@ -30,6 +30,10 @@ class Issue:
     message: str
 
 
+class FormCancelledError(Exception):
+    """The user closed the form without submitting it."""
+
+
 class FormValidationError(ValueError):
     """The finished value doesn't validate."""
 

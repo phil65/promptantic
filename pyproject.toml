@@ -3,7 +3,7 @@
 [project]
 name = "promptantic"
 version = "1.0.2"
-description = "Interactively populate Pydantic models with type-aware prompt-toolkit prompts"
+description = "Terminal forms for JSON Schemas and Python types (Textual or prompt-toolkit)"
 readme = "README.md"
 requires-python = ">=3.13"
 license = "MIT"
@@ -16,10 +16,12 @@ keywords = [
   "forms",
   "input",
   "interactive",
+  "json-schema",
   "prompt",
   "prompt-toolkit",
   "pydantic",
   "terminal",
+  "textual",
   "tui",
 ]
 classifiers = [
