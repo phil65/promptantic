@@ -2,7 +2,7 @@
 
 [project]
 name = "promptantic"
-version = "1.0.2"
+version = "1.1.0"
 description = "Terminal forms for JSON Schemas and Python types (Textual or prompt-toolkit)"
 readme = "README.md"
 requires-python = ">=3.13"
