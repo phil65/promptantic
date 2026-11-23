@@ -83,6 +83,16 @@ class FormView(Widget):
             yield make_editor(self.root, (), self.initial, self._register)
         yield Static("", id="summary", classes="-empty")
 
+    def on_mount(self) -> None:
+        self.call_after_refresh(self.focus_first)
+
+    def focus_first(self) -> None:
+        """Focus the first input, so typing goes straight into the form."""
+        for widget in self.query_one("#fields").query("*"):
+            if widget.focusable:
+                widget.focus()
+                return
+
     def _register(self, path: Path, editor: Editor) -> None:
         self._editors[path] = editor
 

@@ -155,3 +155,11 @@ async def test_optional_nested_object_is_switched_on_explicitly() -> None:
         app.action_submit()
         await pilot.pause()
     assert app.return_value == Order(customer="Lu", ship_to=Address(street="Main St 1"))
+
+
+async def test_typing_starts_in_the_first_field() -> None:
+    app = FormApp(target_for(Order))
+    async with app.run_test() as pilot:
+        await pilot.pause()
+        await pilot.press("A", "d", "a")
+        assert inputs(app)[0].value == "Ada"
