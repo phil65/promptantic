@@ -41,10 +41,13 @@ classifiers = [
   "Typing :: Typed",
 ]
 dependencies = [
+  "jsonschema>=4.23",
   "prompt-toolkit>=3.0.48",
   "pydantic",
   # Only add below (Copier)
   "pydantic-core>=2.0",
+  "referencing>=0.36",
+  "schemez>=2.4.0",
   "universal-pathlib>=0.3.0",
 ]
 
