@@ -14,6 +14,8 @@ __author__ = "Philipp Temminghoff"
 
 from typing import Literal
 
+from promptantic.api import fill
+from promptantic.form import FormTarget, FormValidationError, SchemaError, target_for
 from promptantic.generator import ModelGenerator
 from promptantic.exceptions import PromptanticError
 from promptantic.creator import ModelCreator
@@ -30,14 +32,13 @@ warnings.filterwarnings(
 
 __all__ = [
     "SKIP_PROMPT_KEY",
-    "ModelGenerator",
-    "PromptanticError",
-    "__version__",
-]
-__all__ = [
-    "SKIP_PROMPT_KEY",
+    "FormTarget",
+    "FormValidationError",
     "ModelCreator",
     "ModelGenerator",
     "PromptanticError",
+    "SchemaError",
     "__version__",
+    "fill",
+    "target_for",
 ]
