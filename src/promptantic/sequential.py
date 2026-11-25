@@ -70,7 +70,7 @@ async def fill_sequential(
     while True:
         try:
             value = await asker.ask(root, "", value, required=True, depth=0)
-        except (EOFError, KeyboardInterrupt):  # Ctrl-D / Ctrl-C
+        except EOFError, KeyboardInterrupt:  # Ctrl-D / Ctrl-C
             raise FormCancelledError from None
         try:
             return form_target.validate({} if value is UNSET else value)
