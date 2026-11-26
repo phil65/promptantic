@@ -1,12 +1,12 @@
 from __future__ import annotations
 
 import asyncio
-from typing import Annotated, Literal
+from typing import Annotated, Any, Literal
 
 from prompt_toolkit import PromptSession
 from prompt_toolkit.input import create_pipe_input
 from prompt_toolkit.output import DummyOutput
-from pydantic import BaseModel, Field
+from pydantic import BaseModel, ConfigDict, Field, SecretStr
 import pytest
 
 from promptantic import fill
@@ -101,3 +101,81 @@ async def test_end_of_input_cancels() -> None:
         session: PromptSession[str] = PromptSession(input=pipe, output=DummyOutput())
         with pytest.raises(FormCancelledError):
             await asyncio.wait_for(fill_sequential(Order, session=session, echo=print), 10)
+
+
+class Credentials(BaseModel):
+    user: str
+    token: SecretStr
+
+
+class Service(BaseModel):
+    name: str
+    creds: Credentials
+    keys: list[SecretStr] = []
+
+
+async def test_editing_an_instance_keeps_secrets(monkeypatch: pytest.MonkeyPatch) -> None:
+    from promptantic import ModelGenerator
+
+    instance = Service(
+        name="api",
+        creds=Credentials(user="ada", token=SecretStr("real-secret")),
+        keys=[SecretStr("k1")],
+    )
+    seen: list[Any] = []
+
+    async def sequential_fill(target: Any, **kwargs: Any) -> Any:
+        seen.append(kwargs["initial"])
+        # accept every default: name, user, token, keep k1, add a key? n
+        result, lines = await run(target, "\n\n\n\nn\n", initial=kwargs["initial"])
+        seen.append(lines)
+        return result
+
+    monkeypatch.setattr("promptantic.generator.fill", sequential_fill)
+    result = await ModelGenerator().apopulate(instance)
+    assert result.creds.token.get_secret_value() == "real-secret"
+    assert [k.get_secret_value() for k in result.keys] == ["k1"]
+    assert "real-secret" not in str(seen[1])  # never echoed
+
+
+async def test_secret_default_is_shown_masked() -> None:
+    lines: list[str] = []
+    prompts: list[str] = []
+    with create_pipe_input() as pipe:
+        pipe.send_text("\n\n")
+        session: PromptSession[str] = PromptSession(input=pipe, output=DummyOutput())
+        original = session.prompt_async
+
+        async def prompt_async(message: Any, **kwargs: Any) -> str:
+            prompts.append(str(message))
+            return await original(message, **kwargs)
+
+        session.prompt_async = prompt_async  # ty: ignore[invalid-assignment]
+        result = await asyncio.wait_for(
+            fill_sequential(
+                Credentials,
+                session=session,
+                echo=lines.append,
+                initial={"user": "ada", "token": "real-secret"},
+            ),
+            timeout=10,
+        )
+    assert result.token.get_secret_value() == "real-secret"
+    assert any("[********]" in p for p in prompts)
+    assert not any("real-secret" in p for p in prompts)
+
+
+class Loose(BaseModel):
+    model_config = ConfigDict(extra="allow")
+
+    name: str
+
+
+async def test_initial_extra_keys_are_kept() -> None:
+    result, _ = await run(Loose, "\n", initial={"name": "a", "color": "red"})
+    assert result.model_dump() == {"name": "a", "color": "red"}
+
+
+async def test_initial_extra_keys_dropped_when_not_allowed() -> None:
+    result, _ = await run(Address, "\n\n", initial={"street": "s", "bogus": 1})
+    assert result == Address(street="s")

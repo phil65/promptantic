@@ -124,8 +124,12 @@ class _Asker:
         validator: Callable[[str], object] | None = None,
         secret: bool = False,
     ) -> str:
-        """Ask once; empty input means ``default`` (shown in brackets, not pre-filled)."""
-        shown = "" if default == "" or secret else f" [{default}]"
+        """Ask once; empty input means ``default`` (shown in brackets, not pre-filled).
+
+        A secret's default is shown masked.
+        """
+        masked = " [********]" if secret else f" [{default}]"
+        shown = "" if default == "" else masked
 
         def check(text: str) -> None:
             if validator is not None:
@@ -272,6 +276,9 @@ class _Asker:
             )
             if value is not UNSET:
                 result[prop.name] = value
+        if node.additional is not None:  # free keys allowed: keep the extra starting values
+            declared = {prop.name for prop in node.properties}
+            result.update({k: v for k, v in values.items() if k not in declared})
         return result
 
     async def _union(

@@ -438,6 +438,10 @@ class ObjectEditor(Editor):
         if not self._enabled():
             return None
         result: dict[str, Any] = {}
+        if self.node.additional is not None and isinstance(self.initial, dict):
+            # free keys allowed: keep the extra starting values (no editor for them)
+            declared = {prop.name for prop in self.node.properties}
+            result.update({k: v for k, v in self.initial.items() if k not in declared})
         for name, editor in self._editors.items():
             value = editor.get_value()
             if value is not UNSET:
