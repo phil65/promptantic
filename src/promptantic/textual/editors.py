@@ -5,8 +5,6 @@ constraints, from :func:`~promptantic.form.field_errors`), and gives its current
 value (:meth:`Editor.get_value`). The whole value is validated on submit.
 """
 
-from __future__ import annotations
-
 import json
 from typing import TYPE_CHECKING, Any, ClassVar, cast
 

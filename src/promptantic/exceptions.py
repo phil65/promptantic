@@ -1,7 +1,5 @@
 """Exceptions for promptantic."""
 
-from __future__ import annotations
-
 
 class PromptanticError(Exception):
     """Base exception for promptantic."""

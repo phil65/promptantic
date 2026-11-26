@@ -4,8 +4,6 @@ The whole value is validated at the end (:mod:`promptantic.form.target`); these
 checks are what a renderer shows next to a field as the user types.
 """
 
-from __future__ import annotations
-
 import json
 import math
 import re

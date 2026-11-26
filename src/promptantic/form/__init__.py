@@ -5,8 +5,6 @@ Renderers (Textual, prompt-toolkit) build their widgets from the tree of
 and hand the finished value to :meth:`FormTarget.validate`.
 """
 
-from __future__ import annotations
-
 from promptantic.form.build import SchemaError, build_form
 from promptantic.form.nodes import (
     UNSET,

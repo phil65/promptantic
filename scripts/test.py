@@ -1,7 +1,5 @@
 """Test script demonstrating all supported field types."""
 
-from __future__ import annotations
-
 import asyncio
 from datetime import date, datetime, time, timedelta
 from enum import Enum

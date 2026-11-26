@@ -6,8 +6,6 @@ recursive schemas (a tree whose nodes contain trees) are fine: only what a user
 opens is ever built.
 """
 
-from __future__ import annotations
-
 from dataclasses import dataclass, field
 from enum import Enum
 from functools import cached_property

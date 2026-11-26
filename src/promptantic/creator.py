@@ -1,7 +1,5 @@
 """Design a pydantic model interactively: a form for a :class:`~promptantic.ModelSpec`."""
 
-from __future__ import annotations
-
 from typing import TYPE_CHECKING, Any
 
 from pydantic import BaseModel

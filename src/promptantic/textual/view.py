@@ -7,8 +7,6 @@
 * :func:`fill_inline`: fill a form from a plain CLI; renders below the prompt.
 """
 
-from __future__ import annotations
-
 from typing import TYPE_CHECKING, Any, ClassVar
 
 from textual.app import App

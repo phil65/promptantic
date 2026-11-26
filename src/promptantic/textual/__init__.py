@@ -4,8 +4,6 @@ Embed :class:`FormView` or :class:`FormScreen` in a Textual app, or call
 :func:`fill_inline` from a plain CLI.
 """
 
-from __future__ import annotations
-
 from promptantic.textual.editors import Editor, make_editor
 from promptantic.textual.view import (
     FormApp,

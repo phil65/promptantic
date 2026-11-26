@@ -6,8 +6,6 @@ becomes a JSON Schema (:meth:`ModelSpec.json_schema`) or a pydantic class
 (:meth:`ModelSpec.model_class`, built with :func:`pydantic.create_model`).
 """
 
-from __future__ import annotations
-
 import datetime as dt
 import json
 from types import GenericAlias

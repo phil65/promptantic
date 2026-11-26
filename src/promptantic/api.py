@@ -1,7 +1,5 @@
 """``fill()``: one call to get a value from the user, whatever the terminal can do."""
 
-from __future__ import annotations
-
 import importlib.util
 import sys
 from typing import TYPE_CHECKING, Any, Literal, overload

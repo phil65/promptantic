@@ -1,7 +1,5 @@
 """``ModelGenerator``: the classic API, now a thin wrapper around :func:`promptantic.fill`."""
 
-from __future__ import annotations
-
 import asyncio
 from typing import Any, overload
 

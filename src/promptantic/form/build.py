@@ -10,8 +10,6 @@ schemas say "or null" (``type: [..., "null"]``, a ``null`` variant, OpenAPI's
 ``contains``, ``dependentSchemas``) are left to validation.
 """
 
-from __future__ import annotations
-
 from collections.abc import Mapping
 from dataclasses import replace
 from typing import TYPE_CHECKING, Any, cast

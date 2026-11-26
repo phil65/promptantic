@@ -5,8 +5,6 @@ value: JSON Schemas with :mod:`jsonschema` (Draft 2020-12, formats checked),
 Python types with pydantic, which also turns the value into an instance.
 """
 
-from __future__ import annotations
-
 from collections.abc import Mapping
 from dataclasses import dataclass
 from typing import TYPE_CHECKING, Any, overload

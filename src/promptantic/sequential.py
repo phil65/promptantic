@@ -8,8 +8,6 @@ whole value is validated; on problems they're listed and the form is asked again
 with everything entered so far as the defaults.
 """
 
-from __future__ import annotations
-
 import json
 from typing import TYPE_CHECKING, Any
 
