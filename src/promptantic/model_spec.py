@@ -13,7 +13,7 @@ import json
 from types import GenericAlias
 from typing import Annotated, Any, Literal
 
-from pydantic import BaseModel, Field, create_model
+from pydantic import BaseModel, Field, ValidationInfo, create_model, field_validator
 
 
 type FieldType = Literal[
@@ -36,7 +36,8 @@ _SCHEMAS: dict[str, dict[str, Any]] = {
 class FieldSpec(BaseModel):
     """One field of a model being designed."""
 
-    name: str = Field(min_length=1, pattern=r"^[A-Za-z_][A-Za-z0-9_]*$")
+    # pydantic doesn't allow field names with a leading underscore
+    name: str = Field(min_length=1, pattern=r"^[A-Za-z][A-Za-z0-9_]*$")
     type: FieldType = "string"
     required: bool = True
     default: str | None = Field(
@@ -45,6 +46,19 @@ class FieldSpec(BaseModel):
     description: str | None = None
     items: ItemType = Field(default="string", description="Item type (for lists)")
     fields: list[FieldSpec] = Field(default=[], description="Its fields (for objects)")
+
+    @field_validator("default")
+    @classmethod
+    def _check_default(cls, value: str | None, info: ValidationInfo) -> str | None:
+        """Reject a default that isn't a value of the field's type (here, in the form)."""
+        if value is not None and (kind := info.data.get("type")) is not None:
+            _parse_default(kind, value)  # raises ValueError, shown at the field
+        return value
+
+    @field_validator("fields")
+    @classmethod
+    def _check_fields(cls, value: list[FieldSpec]) -> list[FieldSpec]:
+        return _unique_names(value)
 
     def json_schema(self) -> dict[str, Any]:
         """The field as a JSON Schema property."""
@@ -69,6 +83,11 @@ class ModelSpec(BaseModel):
     description: str | None = None
     fields: list[FieldSpec] = Field(min_length=1)
 
+    @field_validator("fields")
+    @classmethod
+    def _check_fields(cls, value: list[FieldSpec]) -> list[FieldSpec]:
+        return _unique_names(value)
+
     def json_schema(self) -> dict[str, Any]:
         """The model as a JSON Schema object."""
         schema = {"title": self.name, **_object_schema(self.fields)}
@@ -76,8 +95,14 @@ class ModelSpec(BaseModel):
             schema["description"] = self.description
         return schema
 
-    def model_class(self, *, base: type[BaseModel] = BaseModel) -> type[BaseModel]:
-        """A pydantic class for the spec (nested objects become nested classes)."""
+    def model_class(
+        self, *, base: type[BaseModel] | tuple[type[Any], ...] = BaseModel
+    ) -> type[BaseModel]:
+        """A pydantic class for the spec (nested objects become nested classes).
+
+        Args:
+            base: The base class, or several (a tuple, as for ``create_model``).
+        """
         return _model_class(self.name, self.fields, base=base, doc=self.description)
 
 
@@ -94,7 +119,11 @@ _TYPES: dict[str, Any] = {
 
 
 def _model_class(
-    name: str, fields: list[FieldSpec], *, base: type[BaseModel], doc: str | None
+    name: str,
+    fields: list[FieldSpec],
+    *,
+    base: type[BaseModel] | tuple[type[Any], ...],
+    doc: str | None,
 ) -> type[BaseModel]:
     definitions: dict[str, Any] = {}
     for spec in fields:
@@ -128,16 +157,54 @@ def _object_schema(fields: list[FieldSpec]) -> dict[str, Any]:
     }
 
 
+def _unique_names(fields: list[FieldSpec]) -> list[FieldSpec]:
+    seen: set[str] = set()
+    for spec in fields:
+        if spec.name in seen:
+            msg = f"Duplicate field name: {spec.name}"
+            raise ValueError(msg)
+        seen.add(spec.name)
+    return fields
+
+
 def _parse_default(kind: str, text: str) -> Any:
-    """A default typed as text, as a value of the field's type."""
+    """A default typed as text, as a value of the field's type.
+
+    Raises:
+        ValueError: The text isn't a value of that type.
+    """
     match kind:
         case "integer":
-            return int(text)
+            try:
+                return int(text)
+            except ValueError:
+                msg = f"Not an integer: {text!r}"
+                raise ValueError(msg) from None
         case "number":
-            return float(text)
+            try:
+                return float(text)
+            except ValueError:
+                msg = f"Not a number: {text!r}"
+                raise ValueError(msg) from None
         case "boolean":
             return text.strip().lower() in {"true", "yes", "y", "1"}
         case "list" | "object":
-            return json.loads(text)
+            try:
+                value = json.loads(text)
+            except ValueError:
+                msg = f"Not valid JSON: {text!r}"
+                raise ValueError(msg) from None
+            expected = list if kind == "list" else dict
+            if not isinstance(value, expected):
+                msg = f"Expected a JSON {'list' if kind == 'list' else 'object'}: {text!r}"
+                raise ValueError(msg)  # noqa: TRY004 (pydantic reports ValueError only)
+            return value
+        case "date" | "datetime":
+            try:
+                (dt.date if kind == "date" else dt.datetime).fromisoformat(text)
+            except ValueError:
+                msg = f"Not an ISO {kind} (e.g. 2026-11-26): {text!r}"
+                raise ValueError(msg) from None
+            return text
         case _:
             return text

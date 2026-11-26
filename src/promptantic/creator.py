@@ -29,7 +29,7 @@ class ModelCreator:
         """
         initial = {"name": model_name} if model_name else None
         spec = await fill(ModelSpec, title="New model", initial=initial)
-        return spec.model_class(base=base_classes[0])
+        return spec.model_class(base=base_classes)
 
     async def acreate_instance(
         self,
@@ -39,4 +39,6 @@ class ModelCreator:
     ) -> BaseModel:
         """Design a model, then fill an instance of it."""
         model: type[Any] = await self.acreate(model_name, base_classes)
+        if populator is not None:
+            return await populator.apopulate(model)
         return await fill(model)
