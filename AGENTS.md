@@ -82,7 +82,7 @@ pytest.
 
 ## Conventions
 
-- Python >= 3.14, `from __future__ import annotations`, Google docstrings, line length 100,
+- Python >= 3.14, no `from __future__ import annotations` (PEP 649; banned via ruff TID251), Google docstrings, line length 100,
   ruff with preview formatting (Markdown code blocks in README are formatted too).
 - `import datetime as dt` (ruff ICN001).
 - Type checking is ty, not mypy: use `# ty: ignore[rule]` sparingly, no `# type: ignore`.
